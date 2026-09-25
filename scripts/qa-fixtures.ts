@@ -1,0 +1,12 @@
+import {mkdirSync,writeFileSync} from 'node:fs';
+import {Game, validateSave} from '../src/game';
+import {hero} from '../src/data';
+import {COMPONENTS} from '../src/equipment';
+const dir='output/playwright/fixtures';mkdirSync(dir,{recursive:true});
+const save=(name:string,g:Game)=>{if(!validateSave(g.state))throw new Error('Invalid fixture '+name);writeFileSync(`${dir}/${name}.json`,JSON.stringify(g.state));};
+const g=new Game(undefined,771);const s=g.state;s.round=13;s.gold=42;s.level=6;s.xp=16;s.autoAdvance=false;s.difficulty='expert';s.hp=82;s.nextUid=12;s.units=[['nezha',31,2,['blade_cloak']],['erlang',30,2,['blade_tear']],['xuanwu',32,2,['armor_belt']],['jiang',53,2,['tear_tear']],['lei',50,2,['rod_rod']],['aobing',35,2,['rod_tear']],['fox',null,1,[]],['change',null,1,[]]].map(([heroId,position,star,items],i)=>({uid:`u${i+1}`,heroId:heroId as any,position:position as number|null,star:star as number,items:items as string[]}));s.relics=['lotus','balance'];s.inventory=COMPONENTS.map(c=>c.id);s.shop=['change','erlang','nuwa','phoenix','wukong'];const r=s.rivals[0];r.level=6;r.nextUid=10;r.relics=['jade','fan'];r.hp=75;r.gold=36;r.units=['chiyou','tiger','nuwa','fox','daji','zhurong'].map((id,i)=>({uid:`r0u${i+1}`,heroId:id as any,star:2,position:[30,32,53,49,55,50][i],items:i===0?['belt_belt']:[]}));s.opponentId=r.id;save('midgame',g);
+g.start();save('interrupted',g);g.state.phase='prepare';
+const draft=new Game(undefined,552);draft.state.autoAdvance=false;draft.state.round=6;draft.state.hp=35;draft.start();draft.settle(true,0,10,{},2);draft.continue();save('carousel',draft);
+const relic=new Game(undefined,887);relic.state.autoAdvance=false;relic.state.round=18;relic.state.relics=['jade','coin'];relic.start();relic.settle(true,0,10,{},2);relic.continue();save('augment',relic);
+s.rivals.forEach((r,i)=>{r.hp=i===0?1:0;r.eliminatedRound=i===0?null:12});g.start();g.settle(true,0,18,{u1:3580,u2:2460,u3:820,u4:190,u5:3120,u6:1830},6);save('champion',g);
+console.log('5 valid QA fixtures generated');

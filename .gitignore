@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.DS_Store
+.playwright-cli/
+output/
+.env
+.env.*
+*.log
