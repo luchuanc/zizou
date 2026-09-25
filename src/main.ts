@@ -108,7 +108,7 @@ const root = $("#app");
 root.innerHTML = `
   <div class="landscape" aria-hidden="true"></div>
   <header class="topbar">
-    <a class="brand" href="#" aria-label="山海弈首页"><img src="/icon.svg" alt=""/><h1>山海弈</h1><small>单机</small></a>
+    <a class="brand" href="#" aria-label="山海弈首页"><img src="${import.meta.env.BASE_URL}icon.svg" alt=""/><h1>山海弈</h1><small>单机</small></a>
     <div class="journey"><div id="journey-progress"></div><span id="phase-label"></span><strong id="phase-timer">30</strong></div>
     <nav class="header-actions" aria-label="游戏菜单"><button data-action="builds" aria-label="预选阵容">${icon("leaf")}</button><button data-action="codex" aria-label="山海图鉴">${icon("book")}</button><button id="sound-button" data-action="sound" aria-label="开启音乐">${icon("mute")}</button><button data-action="fullscreen" aria-label="全屏横屏">⛶</button><button data-action="settings" aria-label="设置">${icon("settings")}</button></nav>
   </header>
@@ -1368,7 +1368,7 @@ void boot();
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     void navigator.serviceWorker
-      .register("/sw.js")
+      .register(`${import.meta.env.BASE_URL}sw.js`)
       .then(async () => {
         await navigator.serviceWorker.ready;
         if (!game.storageWarning)

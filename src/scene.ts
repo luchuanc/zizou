@@ -130,7 +130,7 @@ export class Scene {
       "aria-label",
       "山海棋盘。可点选英灵，再点击己方格子布阵。也可使用布阵按钮操作。",
     );
-    const atlas = await Assets.load<Texture>("/assets/heroes.png");
+    const atlas = await Assets.load<Texture>(`${import.meta.env.BASE_URL}assets/heroes.png`);
     for (let i = 0; i < 12; i++) {
       const x = Math.floor(((i % 4) * atlas.width) / 4),
         y = Math.floor((Math.floor(i / 4) * atlas.height) / 3);
@@ -152,7 +152,7 @@ export class Scene {
       ["/assets/heroes-expansion.png", 4, 2],
       ["/assets/heroes-underworld.png", 2, 2],
     ] as const) {
-      const tex = await Assets.load<Texture>(path);
+      const tex = await Assets.load<Texture>(import.meta.env.BASE_URL + path.replace(/^\//, ""));
       for (let i = 0; i < cols * rows; i++) {
         const x = Math.floor(((i % cols) * tex.width) / cols),
           y = Math.floor((Math.floor(i / cols) * tex.height) / rows),
