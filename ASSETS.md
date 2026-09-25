@@ -1,13 +1,15 @@
 # 原创素材记录
 
-所有美术素材均通过内置 image_gen 生成，已复制到项目中；运行时不依赖外部图片服务。最终采纳的素材：
+角色与山水由内置 image_gen 生成，图标与战斗特效由本项目程序绘制；运行时不依赖外部图片服务。最终采纳的素材：
 
 - `public/assets/kunlun.png`：青绿昆仑山水，1672 × 941。
 - `public/assets/heroes.png`：首批 12 位英灵，4 × 3 透明图集。
 - `public/assets/heroes-expansion.png`：后羿、共工、祝融、蚩尤、精卫、伏羲、妲己、神农，4 × 2 透明图集。
 - `public/assets/heroes-underworld.png`：钟馗、阎罗、孟婆、白无常，2 × 2 透明图集。
 - `public/icon.svg`：项目原创的山岳徽记。PNG 安装图标由 `scripts/icons.mjs` 渲染。
-- 战斗特效：`src/effects.ts` 和 `src/scene.ts` 中的 PixiJS 实时矢量、粒子和程序动画。
+- `public/assets/equipment/*.svg`：44 个原创装备图标（8 散件、36 成装），包含刀剑、弓弩、甲衣、鼎、镜、符、印等器物轮廓；由 `scripts/equipment-icons.ts` 绘制。
+- `public/assets/equipment-atlas.png`：同一批图标的 512×384 图集，单格 64×64，供棋盘上已穿戴装备显示。重建：`npm run icons:equipment`。
+- 战斗特效：`src/effects.ts` 和 `src/scene.ts` 中的 PixiJS 软光精灵、短弹道、命中粒子和程序动画。箭矢、冰棱、火弹、魂火使用不同轮廓；光晕纹理由 Canvas 径向渐变生成并复用，无需外部特效软件。
 - 音乐与音效：`src/audio.ts` 用 Web Audio 实时合成五声音阶及战斗反馈，无外部录音。
 
 ## 场景最终提示词

@@ -17,6 +17,9 @@ import {
   type LineupPlan,
 } from "./lineup";
 import "./style.css";
+import "./mobile-ui.css";
+import { mountDialog, handleDialogNavigation } from "./modal";
+import { equipmentIconUrl } from "./equipment-icons";
 import {
   HEROES,
   RELICS,
@@ -98,6 +101,15 @@ let lastRenderedPhase: string | null = null;
 let resultCountdown = 5;
 let selectedItem: number | null = null;
 let lineupDraft: HeroId[] = [];
+let shopOpen = true;
+function setShopOpen(open: boolean) {
+  shopOpen = open;
+  root.classList.toggle("shop-open", open);
+  const button = document.querySelector<HTMLButtonElement>("#shop-toggle");
+  button?.setAttribute("aria-expanded", String(open));
+  if (button)
+    button.innerHTML = `${icon("coin", 18)} <span>${open ? "收起寻仙" : "寻仙"}</span>`;
+}
 const portraitQuery = matchMedia(
   "(orientation: portrait) and (max-width: 1000px)",
 );
@@ -113,15 +125,15 @@ root.innerHTML = `
     <nav class="header-actions" aria-label="游戏菜单"><button data-action="builds" aria-label="预选阵容">${icon("leaf")}</button><button data-action="codex" aria-label="山海图鉴">${icon("book")}</button><button id="sound-button" data-action="sound" aria-label="开启音乐">${icon("mute")}</button><button data-action="fullscreen" aria-label="全屏横屏">⛶</button><button data-action="settings" aria-label="设置">${icon("settings")}</button></nav>
   </header>
   <main class="game-area">
-    <aside class="left-panel"><div id="lineup-plan"></div><section class="synergy-section"><div class="section-heading"><h2>羁绊</h2><button data-action="builds">阵容 ↗</button></div><div id="traits"></div><div id="bonds"></div></section><section id="relics"></section><section class="inventory-wrap"><div class="section-heading"><h2>装备</h2><button data-action="equipment" aria-label="装备库与合成">合成 ↗</button></div><div id="inventory"></div></section></aside>
+    <aside class="left-panel"><nav class="mobile-tools"><button data-action="builds" aria-label="预选阵容">${icon("leaf")}<span>阵容</span></button><button data-action="traits" aria-label="查看羁绊">${icon("grid")}<span>羁绊</span></button><button data-action="equipment" aria-label="装备库">${icon("sword")}<span>装备</span></button></nav><div id="lineup-plan"></div><section class="synergy-section"><div class="section-heading"><h2>羁绊</h2><button data-action="builds">阵容 ↗</button></div><div id="traits"></div><div id="bonds"></div></section><section id="relics"></section><section class="inventory-wrap"><div class="section-heading"><h2>装备</h2><button data-action="equipment" aria-label="装备库与合成">合成 ↗</button></div><div id="inventory"></div></section></aside>
     <section class="battlefield" aria-label="战场"><div class="battle-top"><div id="round-label"></div><div class="formation-count" id="formation-count"></div><div id="opponent"></div></div>
       <div id="canvas-host"><div id="loading"><span class="loading-seal">弈</span><p>正在开启山海棋局…</p></div></div>
       <div id="battle-controls"></div><div id="round-report"></div>
       <div class="bench-wrap"><div class="bench-label"><span>备战</span><small id="bench-count">0/9</small></div><div id="bench" aria-label="备战英灵"></div><button class="formation-button" data-action="formation" aria-label="打开布阵面板">${icon("grid", 17)}</button></div>
     </section>
-    <aside class="right-panel"><div class="section-heading"><h2>弈者</h2><button data-action="standings">排名 ↗</button></div><div id="standings"></div><div id="player"></div><div id="combat-damage"></div><button class="guide-link" data-action="help">${icon("book", 13)} 玩法手札</button></aside>
+    <aside class="right-panel"><nav class="mobile-tools"><button data-action="standings" aria-label="查看八方排名">${icon("heart")}<span>排名</span></button><button data-action="damage" aria-label="查看伤害统计">${icon("sword")}<span>战绩</span></button></nav><div class="section-heading"><h2>弈者</h2><button data-action="standings">排名 ↗</button></div><div id="standings"></div><div id="player"></div><div id="combat-damage"></div><button class="guide-link" data-action="help">${icon("book", 13)} 玩法手札</button></aside>
   </main>
-  <footer class="recruitment"><div class="economy" id="economy"></div><section class="shop-wrap" aria-label="寻仙招募区"><div class="shop-heading"><div id="shop-meta"></div><button class="lock-button" id="lock-button" data-action="lock"></button></div><div id="shop"></div><div id="sell-zone" aria-hidden="true"></div></section><div class="round-actions" id="round-actions"></div></footer>
+  <footer class="recruitment"><div class="economy" id="economy"></div><section class="shop-wrap" aria-label="寻仙招募区"><div class="shop-heading"><div id="shop-meta"></div><button class="lock-button" id="lock-button" data-action="lock"></button></div><div id="shop"></div><div id="sell-zone" aria-hidden="true"></div></section><div class="round-actions" id="round-actions"></div><button id="shop-toggle" class="shop-toggle" data-action="shop-toggle" aria-expanded="true">寻仙</button></footer>
   <section id="inspector"></section>
   <div class="bottom-note"><span id="save-status">本地自动存档</span></div>
   <div id="toast" role="status" aria-live="polite"></div>
@@ -129,7 +141,7 @@ root.innerHTML = `
   <div class="orientation-guide"><div class="rotate-symbol">▯ ↻</div><h2>横屏，开启山海棋局</h2><p>请将手机旋转为横屏<br/>棋盘、备战席与商店将同时展开</p><button data-action="fullscreen" class="primary-button">进入全屏</button><small>旋转期间已暂停自动推进</small></div>
 `;
 const eqIcon = (id: string) =>
-  `<span class="equipment-icon ${item(id).parts ? "complete" : ""}" title="${item(id).name}">${item(id).glyph}</span>`;
+  `<span class="equipment-icon ${item(id).parts ? "complete" : ""}" title="${item(id).name}"><img src="${equipmentIconUrl(id)}" alt="" width="64" height="64"/></span>`;
 const canShop = () => ["prepare", "battle"].includes(game.state.phase);
 
 function notify(message: string) {
@@ -255,6 +267,12 @@ function update() {
     .join("");
   $("#round-actions").innerHTML =
     `<button class="gold-total" data-action="income" aria-label="查看收入明细">${icon("coin", 18)}<strong>${s.gold}</strong></button><div class="interest-pips" title="利息 ${Math.min(s.relics.includes("savings") ? 7 : 5, Math.floor(s.gold / 10))}">${Array.from({ length: s.relics.includes("savings") ? 7 : 5 }, (_, i) => `<i class="${s.gold >= (i + 1) * 10 ? "lit" : ""}"></i>`).join("")}</div><button class="battle-button" data-action="${s.phase === "result" ? "continue" : "battle"}" ${!["prepare", "result"].includes(s.phase) || !ready ? "disabled" : ""}>${s.phase === "battle" ? "交战中" : s.phase === "result" ? "下一回合" : "立即开战"}</button><button class="auto-toggle" data-action="autoplay" aria-label="${s.autoAdvance ? "暂停自动推进" : "恢复自动推进"}">${icon(s.autoAdvance ? "pause" : "play", 12)} ${s.autoAdvance ? "自动" : "已暂停"}</button>`;
+  if (["relic", "carousel", "event", "ended"].includes(s.phase)) {
+    const button = $<HTMLButtonElement>(".battle-button");
+    button.disabled = !ready;
+    button.dataset.action = "resume-choice";
+    button.textContent = s.phase === "ended" ? "查看结算" : "继续选择";
+  }
   $("#round-report").innerHTML =
     s.phase === "result" && s.result
       ? `<button data-action="result" class="round-result-banner ${s.result.won ? "won" : ""}"><b>${s.result.draw ? "平局" : s.result.won ? "胜利" : "惜败"}</b><span>灵石 +${s.result.income}${s.result.damage ? " · 气血 -" + s.result.damage : ""}</span><span>${s.result.loot?.map((id) => eqIcon(id)).join("") ?? ""}</span><small>战况 ↗</small></button>`
@@ -267,8 +285,12 @@ function update() {
   if (ready) scene.sync(s, selected);
   const changed = lastRenderedPhase !== s.phase;
   lastRenderedPhase = s.phase;
-  if (changed) resultCountdown = 5;
-  if (changed || !$<HTMLDialogElement>("#modal").open) {
+  if (changed) {
+    resultCountdown = 5;
+    if (s.phase === "prepare") setShopOpen(true);
+    else if (s.phase === "battle") setShopOpen(false);
+  }
+  if (changed) {
     if (s.phase === "ended") showResult();
     else if (s.phase === "relic") showRelics();
     else if (s.phase === "carousel") showCarousel();
@@ -337,7 +359,7 @@ function renderInspector() {
   const h = hero(u.heroId),
     enemy = !game.state.units.some((v) => v.uid === u.uid);
   $("#inspector").innerHTML =
-    `<div class="unit-detail"><button class="inspector-close" data-action="deselect" aria-label="取消选择">${icon("close", 14)}</button><div class="detail-art">${art(u.heroId)}</div><h3>${h.name}<span>${"★".repeat(u.star)}</span></h3><p class="unit-subtitle">${h.origin} · ${h.role}</p><div class="mini-stats"><span>基础生命 <b>${Math.round(h.hp * starScale(u.star))}</b></span><span>基础攻击 <b>${Math.round(h.atk * starScale(u.star))}</b></span></div><h4>${h.skill}</h4><p class="skill-copy">${h.description}</p>${!enemy ? `<div class="unit-equipment">${(u.items ?? []).map((id) => `<button data-gear="${id}" aria-label="查看${item(id).name}">${eqIcon(id)}</button>`).join("")}<button data-action="equipment">装备 +</button></div><div class="unit-commands"><button data-action="formation">布阵</button><button data-action="sell" ${!canShop() || (game.state.phase === "battle" && u.position !== null) ? "disabled" : ""}>出售 <span>+${sellPrice(u)}</span></button></div>` : ""}</div>`;
+    `<div class="unit-detail"><button class="inspector-close" data-action="deselect" aria-label="取消选择">${icon("close", 14)}</button><div class="detail-art">${art(u.heroId)}</div><h3>${h.name}<span>${"★".repeat(u.star)}</span></h3><p class="unit-subtitle">${h.origin} · ${h.role}</p><div class="mini-stats"><span>基础生命 <b>${Math.round(h.hp * starScale(u.star))}</b></span><span>基础攻击 <b>${Math.round(h.atk * starScale(u.star))}</b></span></div><button class="inspector-skill" data-hero="${u.heroId}">技能详情 ↗</button><h4>${h.skill}</h4><p class="skill-copy">${h.description}</p>${!enemy ? `<div class="unit-equipment">${(u.items ?? []).map((id) => `<button data-gear="${id}" aria-label="查看${item(id).name}">${eqIcon(id)}</button>`).join("")}<button data-action="equipment">装备 +</button></div><div class="unit-commands"><button data-action="formation">布阵</button><button data-action="sell" ${!canShop() || (game.state.phase === "battle" && u.position !== null) ? "disabled" : ""}>出售 <span>+${sellPrice(u)}</span></button></div>` : ""}</div>`;
 }
 function select(uid: string) {
   selected = selected === uid ? null : uid;
@@ -363,7 +385,7 @@ function move(uid: string, p: number | null) {
   }
 }
 
-function openModal(content: string, kind: string, closable = true) {
+function openModal(content: string, kind: string, _closable = true) {
   cancelUnitDrag();
   modalKind = kind;
   const dialog = $<HTMLDialogElement>("#modal");
@@ -372,14 +394,13 @@ function openModal(content: string, kind: string, closable = true) {
     modalPausedBattle = true;
     renderBattleControls();
   }
-  $("#modal-content").innerHTML =
-    `${closable ? `<button class="modal-close icon-button" data-action="close" aria-label="关闭">${icon("close")}</button>` : ""}${content}`;
+  mountDialog(content, kind, icon("close"));
   if (!dialog.open) {
     lastFocus = document.activeElement as HTMLElement;
     if (portraitQuery.matches) portraitDialogPending = true;
     else dialog.showModal();
   }
-  dialog.dataset.closable = String(closable);
+  dialog.dataset.closable = "true";
 }
 function closeModal() {
   game.dismissLineupPrompt();
@@ -396,11 +417,13 @@ function closeModal() {
   lastFocus?.focus();
 }
 function dismissModal() {
+  closeModal();
+}
+function resumeChoice() {
   if (game.state.phase === "ended") showResult();
   else if (game.state.phase === "carousel") showCarousel();
   else if (game.state.phase === "relic") showRelics();
   else if (game.state.phase === "event") showEvent();
-  else closeModal();
 }
 function showHero(id: HeroId, backBuild?: string) {
   const h = hero(id);
@@ -720,26 +743,46 @@ function showOdds() {
 function showEquipment(index?: number) {
   selectedItem = index ?? null;
   const id = index === undefined ? null : game.state.inventory[index];
+  const tab = (name: string, content: string) =>
+    `<section class="dialog-panel" data-panel-title="${name}">${content}</section>`;
+  const catalog = (complete: boolean) =>
+    `<div class="equipment-codex">${EQUIPMENT.filter(
+      (e) => !!e.parts === complete,
+    )
+      .map(
+        (e) =>
+          `<button data-gear="${e.id}">${eqIcon(e.id)}<span>${e.name}</span></button>`,
+      )
+      .join("")}</div>`;
+  let content = "";
+  if (id) {
+    content += tab(
+      "穿戴",
+      `<p class="modal-intro">${eqIcon(id)} ${item(id).description}</p><div class="equipment-roster">${game.state.units.map((u) => `<button data-equip-uid="${u.uid}" ${game.state.phase === "battle" && u.position !== null ? "disabled" : ""}>${art(u.heroId)}<strong>${hero(u.heroId).name} ${"★".repeat(u.star)}</strong><small>${u.position === null ? "备战席" : "已上阵"} · ${(u.items ?? []).length}/3</small><span>${(u.items ?? []).map(eqIcon).join("")}</span></button>`).join("") || "<p>招募英灵后即可穿戴。</p>"}</div>`,
+    );
+    if (!item(id).parts)
+      content += tab(
+        "合成",
+        `<p class="modal-intro">选择另一件库存散件，立即合成。</p><div class="recipe-grid">${
+          game.state.inventory
+            .map((other, i) => {
+              const result = combine(id, other);
+              return i !== index && result
+                ? `<button data-combine="${i}">${eqIcon(other)}<span>→</span>${eqIcon(result)}<b>${item(result).name}</b></button>`
+                : "";
+            })
+            .join("") || "<p>暂时没有可合成的另一件散件。</p>"
+        }</div>`,
+      );
+  } else {
+    content += tab(
+      "我的装备",
+      `<p class="modal-intro">拖到英灵身上穿戴；两件散件自动合成。每位最多三件，出售后返还。</p><div class="equipment-inventory">${game.state.inventory.map((id, i) => `<button data-item="${i}">${eqIcon(id)}<span>${item(id).name}</span></button>`).join("") || "<p>击败野怪或参与选秀获得装备。</p>"}</div>`,
+    );
+  }
+  content += tab("基础散件", catalog(false)) + tab("成装图鉴", catalog(true));
   openModal(
-    `<span class="eyebrow">八类散件 · 三十六种成装</span><h2 id="modal-title">${id ? item(id).name : "装备库"}</h2><p class="modal-intro">${id ? item(id).description : "装备可拖到英灵身上。两件散件自动合成；每位英灵最多携带三件，出售时返还装备。"}</p><div class="equipment-inventory">${game.state.inventory.map((id, i) => `<button data-item="${i}" class="${index === i ? "selected" : ""}">${eqIcon(id)}<span>${item(id).name}</span></button>`).join("") || "<p>击败野怪或参与选秀获得装备。</p>"}</div>${
-      id
-        ? `<h3 class="modal-section-title">穿戴给英灵</h3><div class="equipment-roster">${game.state.units.map((u) => `<button data-equip-uid="${u.uid}">${art(u.heroId)}<strong>${hero(u.heroId).name} ${"★".repeat(u.star)}</strong><small>${u.position === null ? "备战席" : "已上阵"} · ${(u.items ?? []).length}/3</small><span>${(u.items ?? []).map(eqIcon).join("")}</span></button>`).join("")}</div>${
-            !item(id).parts
-              ? `<h3 class="modal-section-title">与库存散件合成</h3><div class="recipe-grid">${
-                  game.state.inventory
-                    .map((other, i) => {
-                      const result = combine(id, other);
-                      return i !== index && result
-                        ? `<button data-combine="${i}">${eqIcon(other)}<span>＋ →</span>${eqIcon(result)}<b>${item(result).name}</b></button>`
-                        : "";
-                    })
-                    .join("") ||
-                  '<p class="muted">暂时没有可合成的另一件散件</p>'
-                }</div>`
-              : ""
-          }`
-        : ""
-    }<h3 class="modal-section-title">装备图鉴 · 点选查看</h3><div class="equipment-codex">${EQUIPMENT.map((e) => `<button data-gear="${e.id}">${eqIcon(e.id)}<span>${e.name}</span></button>`).join("")}</div>`,
+    `<h2 id="modal-title">${id ? item(id).name : "装备库"}</h2>${content}${id ? '<button class="outline-button" data-action="equipment">返回装备库</button>' : ""}`,
     "equipment",
   );
 }
@@ -766,11 +809,15 @@ function showCarousel() {
   );
 }
 
+$("#canvas-host").addEventListener("pointerdown", () => {
+  if (!document.body.classList.contains("unit-dragging")) setShopOpen(false);
+});
 root.addEventListener("click", (event) => {
   const target = (event.target as Element).closest<HTMLElement>(
     "button,[data-action]",
   );
   if (!target || target.hasAttribute("disabled")) return;
+  if (handleDialogNavigation(target)) return;
   if (target.dataset.item !== undefined) {
     showEquipment(Number(target.dataset.item));
     return;
@@ -904,6 +951,24 @@ root.addEventListener("click", (event) => {
     return;
   }
   switch (target.dataset.action) {
+    case "shop-toggle":
+      setShopOpen(!shopOpen);
+      break;
+    case "resume-choice":
+      resumeChoice();
+      break;
+    case "traits":
+      openModal(
+        `<h2 id="modal-title">羁绊与天命</h2><section class="dialog-panel" data-panel-title="当前羁绊"><div class="traits-overview">${$("#traits").innerHTML}</div></section><section class="dialog-panel" data-panel-title="共鸣与天命"><div class="mobile-bonds">${$("#bonds").innerHTML || "<p>特定英灵同时上阵可激活共鸣。</p>"}</div><div class="relic-slots">${$("#relics .relic-slots").innerHTML}</div></section>`,
+        "traits",
+      );
+      break;
+    case "damage":
+      openModal(
+        `<h2 id="modal-title">英灵战绩</h2><div class="damage-overview">${$("#combat-damage").innerHTML || "<p>开战后显示英灵造成的伤害。</p>"}</div>`,
+        "damage",
+      );
+      break;
     case "equipment":
       showEquipment();
       break;
@@ -1119,6 +1184,7 @@ function previewUnitDrag(uid: string, x: number, y: number) {
     return;
   }
   if (dragFeedback?.uid !== uid) {
+    setShopOpen(true);
     clearDragFeedback();
     const ghost = document.createElement("div");
     ghost.className = "drag-ghost";

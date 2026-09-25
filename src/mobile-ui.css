@@ -1,0 +1,1294 @@
+/* Shared equipment artwork, fixed dialog chrome, and a board-first phone layout. */
+[hidden] {
+  display: none !important;
+}
+.equipment-icon {
+  overflow: hidden;
+  padding: 0;
+  border-radius: 4px;
+  line-height: 0;
+}
+.equipment-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.mobile-tools,
+.shop-toggle,
+.inspector-skill {
+  display: none;
+}
+#modal {
+  width: min(
+    920px,
+    calc(
+      100vw - max(24px, env(safe-area-inset-left)) -
+        max(24px, env(safe-area-inset-right))
+    )
+  );
+  height: min(
+    620px,
+    calc(
+      100dvh - max(16px, env(safe-area-inset-top)) -
+        max(16px, env(safe-area-inset-bottom))
+    )
+  );
+  max-height: none;
+  overflow: hidden;
+  margin: auto;
+}
+#modal #modal-content {
+  height: 100%;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 54px;
+  padding: 0 18px 0 22px;
+  border-bottom: 1px solid #c5ac6c38;
+  background: #172e30;
+  gap: 14px;
+}
+#modal .dialog-header h2 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#modal .modal-close {
+  position: static;
+  flex: 0 0 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px;
+}
+.dialog-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 22px;
+  border-bottom: 1px solid #bba57429;
+}
+.dialog-toolbar > button {
+  min-height: 44px;
+  padding: 0 13px;
+  color: #aabcad;
+  font-size: 12px;
+  border-bottom: 2px solid transparent;
+}
+.dialog-toolbar > button.active {
+  color: #f0d18a;
+  border-color: #dcc083;
+}
+.dialog-toolbar .lineup-tabs {
+  padding: 0;
+  border: 0;
+  flex: 1;
+}
+.dialog-caption {
+  font-size: 11px;
+  color: #91ada4;
+  margin-left: auto;
+  max-width: 45%;
+}
+.dialog-body {
+  flex: 1;
+  min-height: 0;
+  padding: 18px 22px;
+  overflow: visible;
+}
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 18px;
+  min-height: 54px;
+  flex-shrink: 0;
+  border-top: 1px solid #c5ac6c38;
+  background: #12282d;
+}
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.dialog-actions > p {
+  margin-right: auto;
+  color: #9eafa0;
+  font-size: 11px;
+}
+.dialog-actions .primary-button,
+.dialog-actions .outline-button,
+.dialog-actions .guide-link,
+.dialog-actions .result-ranking {
+  min-height: 44px;
+  margin: 0;
+  padding: 0 14px;
+}
+.dialog-actions .formation-footer {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+.dialog-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c3cdb6;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.dialog-pagination > button {
+  width: 44px;
+  height: 44px;
+  font-size: 27px;
+  border: 1px solid #b5a87544;
+}
+.dialog-body .modal-intro {
+  margin: 0 0 12px;
+  line-height: 1.65;
+}
+.dialog-body .codex-grid {
+  gap: 10px;
+}
+.dialog-body .help-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+.dialog-body .help-grid section > b {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+.dialog-body .help-save-note {
+  font-size: 10px;
+  line-height: 1.6;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+.dialog-body .equipment-codex,
+.dialog-body .equipment-inventory {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin: 0;
+  gap: 10px;
+}
+.dialog-body .equipment-codex button,
+.dialog-body .equipment-inventory button {
+  min-height: 76px;
+  padding: 8px;
+}
+.dialog-body .equipment-icon {
+  width: 38px;
+  height: 38px;
+}
+.dialog-body .equipment-codex span:last-child,
+.dialog-body .equipment-inventory span:last-child {
+  font-size: 11px;
+}
+.dialog-body .equipment-roster {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.dialog-body .equipment-roster > button {
+  min-height: 94px;
+  position: relative;
+  padding: 6px 6px 6px 62px;
+  text-align: left;
+}
+.dialog-body .equipment-roster .hero-art {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 52px;
+  height: 73px;
+}
+.dialog-body .equipment-roster strong,
+.dialog-body .equipment-roster small {
+  display: block;
+}
+.dialog-body .equipment-roster .equipment-icon {
+  width: 24px;
+  height: 24px;
+  margin-top: 5px;
+}
+.dialog-body .recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+.dialog-body .recipe-grid > button {
+  flex-wrap: wrap;
+  min-height: 70px;
+  justify-content: center;
+}
+.dialog-body .recipe-grid b {
+  width: 100%;
+  font-size: 11px;
+  text-align: center;
+}
+.dialog-body .hero-modal-art {
+  height: 100%;
+  max-height: 330px;
+  width: 30%;
+}
+.dialog-body .hero-modal-copy {
+  min-height: 0;
+  padding: 0;
+  margin-left: 34%;
+}
+.dialog-body .formation-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 28%) minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+.dialog-body .formation-roster {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0;
+  overflow: visible;
+}
+.dialog-body .formation-roster > button {
+  padding: 2px;
+  min-width: 0;
+}
+.dialog-body .formation-roster .hero-art {
+  height: 50px;
+  width: 40px;
+}
+.dialog-body .formation-roster span {
+  display: block;
+  font-size: 10px;
+}
+.dialog-body .formation-grid,
+.dialog-body .scout-grid {
+  margin: 0;
+  gap: 5px;
+}
+.dialog-body .formation-grid button,
+.dialog-body .scout-grid > div {
+  height: 48px;
+  min-height: 44px;
+}
+.dialog-body .formation-grid .hero-art,
+.dialog-body .scout-grid .hero-art {
+  width: 35px;
+  height: 44px;
+}
+.dialog-body .scout-layout {
+  display: grid;
+  grid-template-columns: 1.65fr 1fr;
+  gap: 18px;
+}
+.dialog-body .scout-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+  margin: 0;
+}
+.dialog-body .scout-traits,
+.dialog-body .scout-relics {
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+.dialog-body .scout-tip {
+  line-height: 1.7;
+  margin-top: 10px;
+}
+.dialog-body .standings-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+}
+.dialog-body .standing-row {
+  min-height: 48px;
+  height: auto;
+  padding: 6px;
+}
+.dialog-body .traits-overview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.dialog-body .traits-overview .trait {
+  min-height: 48px;
+}
+.dialog-body .mobile-bonds {
+  display: flex;
+  gap: 10px;
+}
+.dialog-body .lineup-presets {
+  gap: 10px;
+}
+.dialog-body .lineup-hero-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.dialog-body .custom-hero .hero-art {
+  height: 84px;
+}
+.dialog-body .build-heroes {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+.dialog-body .build-heroes > button {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 2px;
+}
+.dialog-body .build-heroes .hero-art {
+  width: 65px;
+  height: 85px;
+}
+.dialog-body .lineup-explainer {
+  margin-top: 6px;
+}
+.dialog-body .all-bonds {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.dialog-body .income-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 22px;
+}
+.dialog-body .record-strip {
+  padding: 8px 0;
+  margin-bottom: 6px;
+}
+.dialog-body .settings-rows > div {
+  padding: 10px 0;
+  min-height: 52px;
+}
+.dialog-body .settings-rows button {
+  margin: 0;
+  min-height: 44px;
+}
+.dialog-body .result-stats {
+  margin: 8px 0;
+  padding: 12px 0;
+}
+.dialog-body .damage-summary {
+  margin-top: 8px;
+}
+.dialog-body .damage-summary h3 {
+  margin-bottom: 6px;
+}
+.dialog-body .damage-row {
+  min-height: 22px;
+}
+.dialog-body .dialog-panel > p:not(.modal-intro) {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 10px 0;
+}
+.dialog-body .carousel-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.dialog-body .carousel-grid > button {
+  height: 79px;
+  min-height: 0;
+  padding: 7px 6px 7px 68px;
+  text-align: left;
+}
+.dialog-body .carousel-grid .hero-art {
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  width: 54px;
+  height: 68px;
+}
+.dialog-body .carousel-grid h3 {
+  margin: 0 0 3px;
+  font-size: 15px !important;
+}
+.dialog-body .carousel-grid h3 small {
+  display: inline;
+  margin-left: 8px;
+}
+.dialog-body .carousel-grid button > span:not(.hero-art) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 10px;
+}
+.dialog-body .carousel-grid .equipment-icon {
+  width: 22px;
+  height: 22px;
+}
+.dialog-body .carousel-grid button > small {
+  margin-top: 2px;
+  font-size: 9px;
+}
+.dialog-body .draft-order {
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.dialog-body .draft-order span {
+  padding: 4px;
+}
+
+@media (max-height: 650px) and (orientation: landscape),
+  (max-width: 1000px) and (orientation: landscape) {
+  :root {
+    --side: 52px;
+    --right: 52px;
+    --header: 36px;
+    --footer: 48px;
+    --bench: 46px;
+  }
+  #app {
+    padding: env(safe-area-inset-top) max(4px, env(safe-area-inset-right))
+      max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+  }
+  .game-area {
+    grid-template-columns: var(--side) minmax(0, 1fr) var(--right);
+    gap: 4px;
+  }
+  .left-panel,
+  .right-panel {
+    height: 100%;
+    overflow: visible;
+    padding: 2px 0;
+    border: 0;
+    background: linear-gradient(#0b2229c0, #0b222960);
+  }
+  .left-panel > #lineup-plan,
+  .left-panel > .synergy-section,
+  .left-panel > #relics,
+  .right-panel > .section-heading,
+  .right-panel > #standings,
+  .right-panel > #combat-damage,
+  .right-panel > .guide-link,
+  .inventory-wrap > .section-heading {
+    display: none;
+  }
+  .mobile-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mobile-tools button {
+    min-height: 44px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1px;
+    font-size: 10px;
+    color: #d6d6b8;
+  }
+  .mobile-tools button svg {
+    width: 19px;
+    height: 19px;
+  }
+  .inventory-wrap {
+    margin: 6px 0 0;
+  }
+  #inventory {
+    grid-template-columns: 1fr;
+    gap: 1px;
+  }
+  #inventory > button {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    margin: 0 auto;
+    background: none;
+    border: 0;
+  }
+  #inventory > button:nth-child(n + 4) {
+    display: none;
+  }
+  #inventory .equipment-icon {
+    width: 33px;
+    height: 33px;
+  }
+  #player {
+    margin: 6px 0;
+  }
+  .player-compact {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 3px;
+    padding: 3px;
+  }
+  .player-compact span {
+    width: 100%;
+    font-size: 8px;
+    text-align: center;
+  }
+  .battle-top {
+    height: 24px;
+    flex: 0 0 24px;
+    padding: 0 5px;
+  }
+  #round-label small {
+    display: none;
+  }
+  .bench-wrap {
+    height: 46px;
+    flex: 0 0 46px;
+    margin: 0;
+    padding: 2px 0;
+    gap: 4px;
+  }
+  .bench-slot {
+    min-height: 40px;
+  }
+  .bench-label {
+    width: 21px;
+    font-size: 9px;
+  }
+  .formation-button {
+    width: 38px;
+    min-width: 38px;
+    height: 42px;
+  }
+  .recruitment {
+    margin: 0;
+    padding: 1px 5px;
+    grid-template-columns: 185px minmax(0, 1fr) 110px;
+    gap: 10px;
+    min-height: 48px;
+    border-top-width: 1px;
+  }
+  .economy {
+    flex-direction: row;
+    padding: 0;
+    gap: 4px;
+  }
+  .economy button {
+    min-height: 44px;
+    padding: 0 7px;
+    font-size: 10px;
+  }
+  .round-actions {
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+  }
+  .round-actions .gold-total {
+    min-width: 55px;
+    min-height: 44px;
+  }
+  .round-actions .gold-total strong {
+    font-size: 24px;
+  }
+  .round-actions .interest-pips {
+    display: none;
+  }
+  .round-actions .battle-button {
+    flex: 1;
+    min-height: 44px;
+  }
+  .round-actions .auto-toggle {
+    min-height: 44px;
+    min-width: 53px;
+  }
+  .shop-toggle {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #b49f6677;
+    color: #eed69e;
+    min-height: 44px;
+    background: #71603544;
+    font-size: 12px;
+  }
+  .shop-wrap {
+    display: none;
+    position: absolute;
+    left: calc(var(--side) + max(8px, env(safe-area-inset-left)));
+    right: calc(var(--right) + max(8px, env(safe-area-inset-right)));
+    top: calc(var(--header) + env(safe-area-inset-top));
+    height: 129px;
+    padding: 5px 8px 8px;
+    background: #112b31fa;
+    border: 1px solid #bd9f64;
+    box-shadow: 0 12px 30px #071c22aa;
+    z-index: 12;
+  }
+  .shop-open .shop-wrap {
+    display: flex;
+  }
+  .shop-heading {
+    height: 24px;
+  }
+  .shop-card {
+    min-height: 0;
+  }
+  .card-illustration {
+    height: 100%;
+  }
+  .card-traits {
+    font-size: 8px;
+    top: 10px;
+  }
+  .card-caption {
+    height: 22px;
+  }
+  .card-caption h3 {
+    font-size: 13px;
+  }
+  #lock-button {
+    width: 44px;
+    min-height: 24px;
+  }
+  .bottom-note {
+    display: none;
+  }
+  #battle-controls {
+    bottom: 51px;
+  }
+  #inspector {
+    width: 236px;
+    left: calc(var(--side) + 10px);
+    bottom: calc(var(--footer) + var(--bench) + 9px);
+    padding: 8px;
+    max-height: none;
+    overflow: visible;
+  }
+  #inspector .inspector-close {
+    width: 44px;
+    height: 44px;
+    right: -5px;
+    top: -5px;
+  }
+  #inspector .detail-art {
+    width: 38px;
+    height: 49px;
+  }
+  #inspector h3 {
+    font-size: 16px;
+    padding-right: 35px;
+  }
+  #inspector .mini-stats,
+  #inspector h4,
+  #inspector .skill-copy {
+    display: none;
+  }
+  #inspector .unit-subtitle {
+    font-size: 10px;
+  }
+  #inspector .unit-equipment {
+    margin-top: 7px;
+    clear: both;
+  }
+  #inspector .unit-commands {
+    margin-top: 5px;
+  }
+  #inspector .unit-commands button {
+    min-height: 38px;
+  }
+  .inspector-skill {
+    display: inline-block;
+    min-height: 30px;
+    font-size: 10px;
+    color: #d5c18a;
+  }
+}
+
+@media (max-height: 650px) {
+  #modal {
+    width: min(
+      920px,
+      calc(
+        100vw - max(16px, env(safe-area-inset-left)) -
+          max(16px, env(safe-area-inset-right))
+      )
+    );
+    height: calc(
+      100dvh - max(10px, env(safe-area-inset-top)) -
+        max(10px, env(safe-area-inset-bottom))
+    );
+  }
+  .dialog-header {
+    flex-basis: 44px;
+    padding: 0 9px 0 16px;
+  }
+  #modal .dialog-header h2 {
+    font-size: 20px;
+  }
+  .dialog-toolbar {
+    padding: 0 16px;
+    gap: 10px;
+    min-height: 38px;
+  }
+  .dialog-toolbar > button,
+  .dialog-toolbar .lineup-tabs > button {
+    min-height: 38px;
+  }
+  .dialog-caption {
+    font-size: 10px;
+  }
+  .dialog-body {
+    padding: 8px 16px;
+  }
+  .dialog-footer {
+    min-height: 48px;
+    padding: 1px 12px;
+    gap: 8px;
+  }
+  .dialog-actions {
+    gap: 8px;
+  }
+  .dialog-actions > p {
+    font-size: 10px;
+  }
+  .dialog-actions .primary-button,
+  .dialog-actions .outline-button {
+    font-size: 11px;
+    padding: 0 12px;
+  }
+  .dialog-pagination {
+    gap: 4px;
+    font-size: 11px;
+  }
+  .dialog-body .modal-intro {
+    font-size: 11px;
+    line-height: 1.6;
+    margin-bottom: 7px;
+  }
+  .dialog-body .codex-grid {
+    gap: 6px;
+  }
+  .dialog-body .codex-grid button {
+    padding: 2px 2px 4px;
+  }
+  .dialog-body .codex-grid .hero-art {
+    width: 49px;
+    height: 61px;
+  }
+  .dialog-body .codex-grid h3 {
+    font-size: 14px !important;
+    margin: 0;
+  }
+  .dialog-body .codex-grid p {
+    font-size: 9px;
+  }
+  .dialog-body .codex-grid button > span:last-child {
+    margin-top: 1px;
+    font-size: 9px;
+  }
+  .dialog-body .lineup-presets {
+    gap: 6px;
+  }
+  .dialog-body .lineup-preset {
+    padding: 5px 7px;
+  }
+  .dialog-body .preset-portraits .hero-art {
+    height: 33px;
+  }
+  .dialog-body .preset-title strong {
+    font-size: 16px;
+  }
+  .dialog-body .lineup-preset p {
+    margin: 3px 0;
+  }
+  .dialog-body .preset-traits {
+    display: none;
+  }
+  .dialog-body .custom-hero {
+    padding: 4px;
+  }
+  .dialog-body .custom-hero .hero-art {
+    height: 52px;
+  }
+  .dialog-body .custom-hero strong {
+    font-size: 11px;
+  }
+  .dialog-body .custom-hero > small {
+    font-size: 9px;
+  }
+  .dialog-body .lineup-hero-grid {
+    gap: 6px;
+  }
+  .dialog-body .build-heroes .hero-art {
+    height: 64px;
+    width: 55px;
+  }
+  .dialog-body .build-heroes h3 {
+    font-size: 14px !important;
+    margin: 0;
+  }
+  .dialog-body .build-heroes small {
+    font-size: 9px;
+  }
+  .dialog-body .lineup-role {
+    font-size: 9px;
+  }
+  .dialog-body .scout-traits button {
+    min-height: 32px;
+  }
+  .dialog-body .hero-modal-art {
+    width: 26%;
+    max-height: 232px;
+  }
+  .dialog-body .hero-modal-copy {
+    margin-left: 30%;
+  }
+  .dialog-body .hero-modal-copy > p {
+    font-size: 11px;
+    line-height: 1.65;
+    margin-bottom: 7px;
+  }
+  .dialog-body .hero-modal-copy h3 {
+    margin: 7px 0 4px;
+    font-size: 14px;
+  }
+  .dialog-body .hero-stats {
+    padding: 7px 0;
+  }
+  .dialog-body .hero-stats b {
+    font-size: 19px;
+  }
+  .dialog-body .hero-stats small {
+    font-size: 10px;
+  }
+  .dialog-body .hero-modal-copy > .muted {
+    font-size: 9px;
+  }
+  .dialog-body .help-grid {
+    gap: 20px;
+  }
+  .dialog-body .help-grid section > b {
+    display: none;
+  }
+  .dialog-body .help-grid p {
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  .dialog-body .help-grid h3 {
+    margin-bottom: 5px;
+  }
+  .dialog-body .formation-layout {
+    gap: 12px;
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+  .dialog-body .formation-roster .hero-art {
+    height: 37px;
+    width: 31px;
+  }
+  .dialog-body .formation-roster > button {
+    min-height: 57px;
+  }
+  .dialog-body .formation-grid button,
+  .dialog-body .scout-grid > div {
+    height: 43px;
+    min-height: 43px;
+  }
+  .dialog-body .formation-grid .hero-art,
+  .dialog-body .scout-grid .hero-art {
+    width: 32px;
+    height: 40px;
+  }
+  .dialog-body .equipment-codex,
+  .dialog-body .equipment-inventory {
+    gap: 7px;
+  }
+  .dialog-body .equipment-codex button,
+  .dialog-body .equipment-inventory button {
+    min-height: 70px;
+    padding: 6px;
+  }
+  .dialog-body .equipment-roster > button {
+    min-height: 80px;
+    padding-left: 50px;
+  }
+  .dialog-body .equipment-roster .hero-art {
+    width: 42px;
+    height: 59px;
+  }
+  .dialog-body .equipment-roster strong {
+    font-size: 12px;
+  }
+  .dialog-body .equipment-roster .equipment-icon {
+    width: 21px;
+    height: 21px;
+  }
+  .dialog-body .recipe-grid .equipment-icon {
+    width: 31px;
+    height: 31px;
+  }
+  .dialog-body .recipe-grid > button {
+    gap: 4px;
+    padding: 5px;
+    min-height: 66px;
+  }
+  .dialog-body .augment-choice > button:first-child {
+    padding: 8px 12px;
+  }
+  .dialog-body .relic-choices {
+    gap: 10px;
+  }
+  .dialog-body .relic-big-glyph {
+    width: 36px;
+    height: 36px;
+    font-size: 25px;
+    margin-bottom: 5px;
+  }
+  .dialog-body .augment-choice h3 {
+    font-size: 19px !important;
+    margin-bottom: 5px;
+  }
+  .dialog-body .augment-choice p {
+    margin: 6px 0;
+    font-size: 11px;
+    min-height: 36px;
+    line-height: 1.7;
+  }
+  .dialog-body .augment-reroll {
+    height: 44px;
+  }
+  .dialog-body .augment-choice b,
+  .dialog-body .relic-choose {
+    font-size: 10px;
+  }
+  .dialog-body .draft-order {
+    font-size: 8px;
+    gap: 3px;
+    margin-bottom: 5px;
+  }
+  .dialog-body .draft-order span {
+    padding: 3px 5px;
+  }
+  .dialog-body .carousel-grid {
+    gap: 5px;
+  }
+  .dialog-body .carousel-grid > button {
+    height: 60px;
+    padding: 3px 3px 3px 53px;
+  }
+  .dialog-body .carousel-grid .hero-art {
+    width: 44px;
+    height: 54px;
+    left: 3px;
+  }
+  .dialog-body .carousel-grid h3 {
+    font-size: 13px !important;
+    margin-bottom: 1px;
+  }
+  .dialog-body .carousel-grid .equipment-icon {
+    width: 20px;
+    height: 20px;
+  }
+  .dialog-body .carousel-grid button > small {
+    font-size: 8px;
+    margin: 0;
+  }
+  .dialog-body .standing-row {
+    min-height: 43px;
+    padding: 3px 6px;
+  }
+  .dialog-body .standing-glyph {
+    width: 30px;
+    height: 30px;
+    font-size: 19px;
+  }
+  .dialog-body .standing-name {
+    font-size: 11px;
+  }
+  .dialog-body .standing-name em {
+    font-size: 9px;
+  }
+  .dialog-body .settings-rows > div {
+    padding: 7px 0;
+    min-height: 48px;
+  }
+  .dialog-body .settings-rows small {
+    font-size: 10px;
+    line-height: 1.6;
+  }
+  .dialog-body .record-strip {
+    font-size: 10px;
+    padding: 5px 0;
+  }
+  .dialog-body .settings-rows + .modal-intro {
+    margin-top: 5px;
+  }
+  .dialog-body .result-stats {
+    padding: 6px 0;
+  }
+  .dialog-body .result-stats b {
+    font-size: 23px;
+  }
+  .dialog-body .result-stats small,
+  .dialog-body .result-stats span {
+    font-size: 10px;
+  }
+  .dialog-body .damage-summary {
+    margin-top: 4px;
+  }
+  .dialog-body .damage-row {
+    min-height: 19px;
+    font-size: 10px;
+  }
+  .dialog-body .odds-table {
+    margin: 0;
+    font-size: 11px;
+  }
+  .dialog-body .odds-table td,
+  .dialog-body .odds-table th {
+    padding: 3px 8px;
+    height: 19px;
+  }
+  .dialog-body .pool-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+  .dialog-body .trait-heroes .hero-art {
+    height: 70px;
+    width: 55px;
+  }
+  .dialog-body .trait-heroes {
+    margin: 10px 0;
+  }
+  .dialog-body .all-bonds {
+    gap: 6px;
+  }
+  .dialog-body .all-bonds button {
+    min-height: 44px;
+    padding: 5px 10px;
+  }
+  .dialog-body .all-bonds small {
+    font-size: 10px;
+  }
+  .dialog-body .income-list p {
+    padding: 8px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #modal[open] {
+    animation: none;
+  }
+}
+/* Override the previous carousel-specific inner padding, now owned by the shell. */
+#modal #modal-content[data-kind] {
+  padding: 0;
+}
+.dialog-body .carousel-grid > button {
+  display: block;
+}
+@media (max-height: 650px) {
+  .dialog-body .codex-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .dialog-body .codex-grid > button {
+    min-height: 0;
+  }
+  #modal-content[data-kind="build-detail"] .lineup-explainer {
+    font-size: 10px;
+    line-height: 1.5;
+    margin-top: 3px;
+  }
+  #modal-content[data-kind="build-detail"] .build-heroes .hero-art {
+    height: 56px;
+  }
+  .dialog-body .odds-table th,
+  .dialog-body .odds-table td {
+    padding: 2px 8px;
+    height: 18px;
+    line-height: 1.2;
+  }
+}
+@media (max-height: 500px) {
+  .dialog-body .codex-grid .hero-art {
+    width: 43px;
+    height: 51px;
+  }
+}
+.dialog-body .damage-overview {
+  max-width: 650px;
+  margin: 10px auto;
+}
+.dialog-body .damage-overview > div {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin-top: 8px;
+  min-height: 34px;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.dialog-body .damage-overview > div > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #b8a3692b;
+  z-index: -1;
+}
+.dialog-body .mobile-bonds {
+  flex-wrap: wrap;
+}
+.dialog-body .relic-slots > button {
+  width: 44px;
+  height: 44px;
+}
+@media (max-height: 650px) and (orientation: landscape),
+  (max-width: 1000px) and (orientation: landscape) {
+  #battle-controls {
+    position: absolute;
+    bottom: 51px;
+    left: 0;
+    right: 0;
+    height: auto;
+    pointer-events: none;
+  }
+  #battle-controls > * {
+    pointer-events: auto;
+  }
+  #battle-controls:has(.combat-toolbar) {
+    left: calc(100% + 4px);
+    right: auto;
+    top: 150px;
+    bottom: auto;
+    width: var(--right);
+  }
+  #battle-controls .combat-toolbar {
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 3px 0;
+    border: 0;
+    background: none;
+  }
+  #battle-controls .combat-toolbar span {
+    min-width: 0;
+    font-size: 8px;
+  }
+  #battle-controls .combat-toolbar button {
+    min-height: 44px;
+    height: 44px;
+    width: 100%;
+    font-size: 10px;
+  }
+  .dialog-body .damage-summary {
+    margin: 4px 0;
+  }
+  .dialog-body .damage-row {
+    margin: 4px 0;
+    min-height: 17px;
+  }
+  .dialog-body .result-stats b {
+    margin: 3px 0;
+  }
+}
+.dialog-footer:has(.dialog-pagination[hidden]):has(.dialog-actions:empty) {
+  display: none;
+}
+@media (max-height: 350px) {
+  .dialog-body .formation-grid,
+  .dialog-body .scout-grid {
+    gap: 3px;
+  }
+  .dialog-body .formation-grid button,
+  .dialog-body .scout-grid > div {
+    height: 34px;
+    min-height: 34px;
+  }
+  .dialog-body .formation-grid .hero-art,
+  .dialog-body .scout-grid .hero-art {
+    height: 32px;
+    width: 27px;
+  }
+  .dialog-body .formation-roster {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dialog-body .formation-layout {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+  .dialog-body .hero-modal-art {
+    max-height: 185px;
+  }
+  .dialog-body .hero-modal-copy {
+    margin-left: 27%;
+  }
+  .dialog-body .hero-modal-copy > p {
+    font-size: 10px;
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+  .dialog-body .hero-stats {
+    padding: 4px 0;
+  }
+  .dialog-body .hero-modal-copy > .muted {
+    font-size: 9px;
+  }
+  .dialog-body .build-heroes .hero-art {
+    height: 40px !important;
+  }
+  .dialog-body .build-heroes {
+    margin: 4px 0;
+  }
+  .dialog-body .scout-traits {
+    margin: 4px 0;
+  }
+  .dialog-body .result-stats {
+    margin: 4px 0;
+    padding: 4px 0;
+  }
+  .dialog-body .result-stats b {
+    font-size: 19px;
+    margin: 2px 0;
+  }
+  .dialog-body .damage-row {
+    margin: 2px 0;
+    min-height: 15px;
+  }
+  .dialog-body .damage-summary h3 {
+    margin-bottom: 3px;
+  }
+  .dialog-body .help-grid {
+    grid-template-columns: 1fr;
+  }
+  .dialog-body .help-grid p {
+    line-height: 1.7;
+  }
+}
+.dialog-body .all-bonds {
+  margin: 0;
+}
+#modal-content[data-kind="hero"] .hero-modal-art {
+  filter: none;
+}
+@media (max-height: 350px) {
+  #modal-content[data-kind="hero"] .hero-modal-art {
+    height: 170px;
+  }
+  .dialog-header .dialog-caption {
+    font-size: 10px;
+  }
+}
+.dialog-body .hero-modal-art .hero-art {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+}

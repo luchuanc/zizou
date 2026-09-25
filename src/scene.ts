@@ -1,5 +1,5 @@
 import { BOARD_CELLS, PLAYER_START } from "./rules";
-import { item } from "./equipment";
+import { item, EQUIPMENT } from "./equipment";
 import {
   Application,
   Assets,
@@ -82,6 +82,8 @@ export class Scene {
   private fx = new Container();
   private motes = new Container();
   private textures: Texture[] = [];
+  private itemTextures = new Map<string, Texture>();
+  private lastNumber = new Map<string, number>();
   private visuals = new Map<string, Visual>();
   private effects: Effect[] = [];
   private tiles: Graphics[] = [];
@@ -130,7 +132,9 @@ export class Scene {
       "aria-label",
       "山海棋盘。可点选英灵，再点击己方格子布阵。也可使用布阵按钮操作。",
     );
-    const atlas = await Assets.load<Texture>(`${import.meta.env.BASE_URL}assets/heroes.png`);
+    const atlas = await Assets.load<Texture>(
+      `${import.meta.env.BASE_URL}assets/heroes.png`,
+    );
     for (let i = 0; i < 12; i++) {
       const x = Math.floor(((i % 4) * atlas.width) / 4),
         y = Math.floor((Math.floor(i / 4) * atlas.height) / 3);
@@ -152,7 +156,9 @@ export class Scene {
       ["/assets/heroes-expansion.png", 4, 2],
       ["/assets/heroes-underworld.png", 2, 2],
     ] as const) {
-      const tex = await Assets.load<Texture>(import.meta.env.BASE_URL + path.replace(/^\//, ""));
+      const tex = await Assets.load<Texture>(
+        import.meta.env.BASE_URL + path.replace(/^\//, ""),
+      );
       for (let i = 0; i < cols * rows; i++) {
         const x = Math.floor(((i % cols) * tex.width) / cols),
           y = Math.floor((Math.floor(i / cols) * tex.height) / rows),
@@ -166,6 +172,18 @@ export class Scene {
         );
       }
     }
+    const equipmentAtlas = await Assets.load<Texture>(
+      `${import.meta.env.BASE_URL}assets/equipment-atlas.png`,
+    );
+    EQUIPMENT.forEach((e, i) =>
+      this.itemTextures.set(
+        e.id,
+        new Texture({
+          source: equipmentAtlas.source,
+          frame: new Rectangle((i % 8) * 64, Math.floor(i / 8) * 64, 64, 64),
+        }),
+      ),
+    );
     this.app.stage.addChild(this.world);
     this.world.addChild(this.board, this.motes, this.actors, this.fx);
     this.actors.sortableChildren = true;
@@ -180,7 +198,7 @@ export class Scene {
       const compression = compact ? 0.62 : 1;
       const headroom = compact ? 44 : 0;
       this.scale = Math.min(
-        privateHost.clientWidth / W,
+        privateHost.clientWidth / (compact ? 840 : W),
         privateHost.clientHeight / (H * compression + headroom),
       );
       this.scaleY = this.scale * compression;
@@ -340,7 +358,7 @@ export class Scene {
         this.effects.push({
           node: ring,
           life: 0,
-          duration: 0.8,
+          duration: 0.6,
           update: (p) => {
             ring.scale.set(0.4 + p * 1.8);
             ring.alpha = 1 - p;
@@ -432,7 +450,8 @@ export class Scene {
         .roundRect(x - 8, 33, 16, 16, 2)
         .fill(0x172e2e)
         .stroke({ color: item(id).parts ? 0xc7a661 : 0x78949a, width: 1 });
-      const glyph = label(item(id).glyph, 10, 0xf2dfab);
+      const glyph = new Sprite(this.itemTextures.get(id));
+      glyph.width = glyph.height = 16;
       glyph.anchor.set(0.5);
       glyph.position.set(x, 41);
       root.addChild(plate, glyph);
@@ -701,27 +720,23 @@ export class Scene {
       to = this.visuals.get(e.to);
     if (!from || !to) return;
     if (e.type === "attack") {
-      const g = new Graphics().circle(0, 0, 3).fill(0xf3e5b5);
-      this.fx.addChild(g);
-      const x = from.root.x,
-        y = from.root.y - 48,
-        tx = to.root.x,
-        ty = to.root.y - 48;
-      this.effects.push({
-        node: g,
-        life: 0,
-        duration: 0.18,
-        update: (p) => {
-          g.position.set(x + (tx - x) * p, y + (ty - y) * p);
-        },
-      });
+      const fighter = this.battle?.fighters.find((f) => f.uid === e.from);
+      if (fighter)
+        this.spells.attack(
+          fighter.heroId,
+          { x: from.root.x, y: from.root.y },
+          { x: to.root.x, y: to.root.y },
+        );
       this.onSound("hit");
     } else if (e.type === "damage" || e.type === "heal") {
       if (e.type === "damage") to.hit = 0.12;
-      if (!e.value) return;
+      if (!e.value || this.effects.length >= 12) return;
+      const numberKey = `${e.to}:${e.type}`;
+      if (this.clock - (this.lastNumber.get(numberKey) ?? -10) < 0.32) return;
+      this.lastNumber.set(numberKey, this.clock);
       const t = label(
         `${e.type === "heal" ? "+" : ""}${e.value}`,
-        e.type === "heal" ? 14 : 16,
+        e.type === "heal" ? 12 : 14,
         e.type === "heal" ? 0x367959 : 0x714435,
       );
       t.style.fontWeight = "bold";
@@ -733,7 +748,7 @@ export class Scene {
       this.effects.push({
         node: t,
         life: 0,
-        duration: 0.8,
+        duration: 0.6,
         update: (p) => {
           t.position.set(x, y - p * 28);
           t.alpha = 1 - p * p;
@@ -754,26 +769,9 @@ export class Scene {
           points,
         );
       }
-      const color = hero(
-        this.battle?.fighters.find((f) => f.uid === e.from)?.heroId ?? "nezha",
-      ).color;
-      const g = new Graphics()
-        .ellipse(0, 0, 52, 31)
-        .stroke({ color, width: 3 })
-        .ellipse(0, 0, 43, 26)
-        .stroke({ color: 0xe6c782, width: 1 });
-      g.position.set(from.root.x, from.root.y);
-      this.fx.addChild(g);
-      this.effects.push({
-        node: g,
-        life: 0,
-        duration: 0.65,
-        update: (p) => {
-          g.scale.set(0.4 + p * 1.6);
-          g.alpha = 1 - p;
-        },
-      });
-      const t = label(e.skill ?? "", 15, 0x805d25);
+      this.onSound("skill");
+      if (fighter?.team !== 0 || this.effects.length >= 8) return;
+      const t = label(e.skill ?? "", 12, 0x805d25);
       t.style.stroke = { color: 0xfff7dd, width: 3 };
       t.anchor.set(0.5);
       t.position.set(from.root.x, from.root.y - 132);
@@ -781,13 +779,12 @@ export class Scene {
       this.effects.push({
         node: t,
         life: 0,
-        duration: 1.2,
+        duration: 0.7,
         update: (p) => {
           t.alpha = 1 - p * p;
           t.y -= 0.15;
         },
       });
-      this.onSound("skill");
     }
   }
 }

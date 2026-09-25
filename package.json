@@ -10,7 +10,8 @@
     "test": "tsx --test tests/*.test.ts",
     "simulate": "tsx scripts/simulate.ts",
     "format": "prettier --write src tests scripts vite.config.ts",
-    "icons": "node scripts/icons.mjs"
+    "icons": "node scripts/icons.mjs",
+    "icons:equipment": "tsx scripts/equipment-icons.ts"
   },
   "dependencies": {
     "pixi.js": "^8.14.3"
