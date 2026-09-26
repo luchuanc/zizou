@@ -18,6 +18,7 @@ import {
 } from "./lineup";
 import "./style.css";
 import "./mobile-ui.css";
+import "./hud.css";
 import { mountDialog, handleDialogNavigation } from "./modal";
 import { equipmentIconUrl } from "./equipment-icons";
 import {
@@ -101,14 +102,14 @@ let lastRenderedPhase: string | null = null;
 let resultCountdown = 5;
 let selectedItem: number | null = null;
 let lineupDraft: HeroId[] = [];
-let shopOpen = true;
+let shopOpen = false;
 function setShopOpen(open: boolean) {
   shopOpen = open;
   root.classList.toggle("shop-open", open);
   const button = document.querySelector<HTMLButtonElement>("#shop-toggle");
   button?.setAttribute("aria-expanded", String(open));
   if (button)
-    button.innerHTML = `${icon("coin", 18)} <span>${open ? "收起寻仙" : "寻仙"}</span>`;
+    button.innerHTML = `${icon("leaf", 21)}<span>${open ? "收起寻仙" : "寻仙"}<small>${open ? "返回棋盘" : "招募英灵"}</small></span>`;
 }
 const portraitQuery = matchMedia(
   "(orientation: portrait) and (max-width: 1000px)",
@@ -133,13 +134,22 @@ root.innerHTML = `
     </section>
     <aside class="right-panel"><nav class="mobile-tools"><button data-action="standings" aria-label="查看八方排名">${icon("heart")}<span>排名</span></button><button data-action="damage" aria-label="查看伤害统计">${icon("sword")}<span>战绩</span></button></nav><div class="section-heading"><h2>弈者</h2><button data-action="standings">排名 ↗</button></div><div id="standings"></div><div id="player"></div><div id="combat-damage"></div><button class="guide-link" data-action="help">${icon("book", 13)} 玩法手札</button></aside>
   </main>
-  <footer class="recruitment"><div class="economy" id="economy"></div><section class="shop-wrap" aria-label="寻仙招募区"><div class="shop-heading"><div id="shop-meta"></div><button class="lock-button" id="lock-button" data-action="lock"></button></div><div id="shop"></div><div id="sell-zone" aria-hidden="true"></div></section><div class="round-actions" id="round-actions"></div><button id="shop-toggle" class="shop-toggle" data-action="shop-toggle" aria-expanded="true">寻仙</button></footer>
+  <footer class="recruitment">
+    <section id="recruitment-shop" class="shop-wrap" aria-label="寻仙招募区"><div class="shop-heading"><div id="shop-meta"></div><button class="lock-button" id="lock-button" data-action="lock"></button></div><div id="shop"></div></section>
+    <div class="command-dock" id="command-dock" aria-label="经营与回合操作，拖入己方英灵可出售">
+      <div id="level-status"></div><div class="economy" id="economy"></div><div id="treasury"></div>
+      <button id="shop-toggle" class="shop-toggle dock-button" data-action="shop-toggle" aria-expanded="false" aria-controls="recruitment-shop">寻仙</button>
+      <div class="round-actions" id="round-actions"></div>
+      <div id="sell-zone" aria-hidden="true"></div>
+    </div>
+  </footer>
   <section id="inspector"></section>
   <div class="bottom-note"><span id="save-status">本地自动存档</span></div>
   <div id="toast" role="status" aria-live="polite"></div>
   <dialog id="modal" aria-labelledby="modal-title"><div id="modal-content"></div></dialog>
   <div class="orientation-guide"><div class="rotate-symbol">▯ ↻</div><h2>横屏，开启山海棋局</h2><p>请将手机旋转为横屏<br/>棋盘、备战席与商店将同时展开</p><button data-action="fullscreen" class="primary-button">进入全屏</button><small>旋转期间已暂停自动推进</small></div>
 `;
+setShopOpen(shopOpen);
 const eqIcon = (id: string) =>
   `<span class="equipment-icon ${item(id).parts ? "complete" : ""}" title="${item(id).name}"><img src="${equipmentIconUrl(id)}" alt="" width="64" height="64"/></span>`;
 const canShop = () => ["prepare", "battle"].includes(game.state.phase);
@@ -188,8 +198,7 @@ function update() {
         : "—";
   $("#round-label").innerHTML =
     `<span>${info.name}</span><small>${REGIONS[Math.min(2, Math.floor((info.stage - 1) / 2))]}</small>`;
-  $("#formation-count").innerHTML =
-    `${icon("grid", 16)} <b>${game.deployed.length}</b><span>/${s.level}</span>`;
+  renderFormationCount();
   $("#lineup-plan").innerHTML =
     `<button class="lineup-summary ${lineup ? "has-plan" : ""}" data-action="builds" aria-label="${lineup ? `更换预选阵容：${lineup.name}，已收集 ${collectedLineup(s.lineupPlan, s.units)}/${lineup.heroes.length}` : "预选阵容：当前自由搭配"}"><span>预选阵容 <i>↗</i></span><strong>${lineup?.name ?? "自由搭配"}</strong><small>${lineup ? `已收集 <b>${collectedLineup(s.lineupPlan, s.units)}/${lineup.heroes.length}</b>` : "点击选择 · 寻仙推荐"}</small></button>`;
   $("#traits").innerHTML =
@@ -243,10 +252,20 @@ function update() {
       ? `<button class="bench-slot occupied ${u.uid === selected ? "selected" : ""}" data-unit="${u.uid}" aria-label="选择${hero(u.heroId).name} ${u.star}星">${art(u.heroId)}<span class="bench-stars">${"★".repeat(u.star)}</span>${u.items?.length ? `<i class="bench-item-dot">${u.items.length}</i>` : ""}</button>`
       : `<button class="bench-slot" data-action="bench" aria-label="空备战席 ${i + 1}"></button>`;
   }).join("");
+  const maxLevel = s.level >= MAX_LEVEL;
+  const xpTarget = maxLevel ? 1 : XP_NEEDED[s.level];
+  $("#level-status").innerHTML =
+    `<button class="level-summary" data-action="odds" aria-label="等级 ${s.level}，${maxLevel ? "已满级" : `经验 ${s.xp}/${xpTarget}`}，查看招募概率"><span class="level-seal"><small>等级</small><b>${s.level}</b></span><span class="level-progress"><span class="level-caption">${maxLevel ? "境界圆满" : "修习进度"}<b>${maxLevel ? "满级" : `${s.xp}<i>/${xpTarget}</i>`}</b></span><span class="level-track" role="progressbar" aria-label="升级经验" aria-valuemin="0" aria-valuemax="${xpTarget}" aria-valuenow="${maxLevel ? 1 : s.xp}"><i style="width:${maxLevel ? 100 : (s.xp / xpTarget) * 100}%"></i></span></span></button>`;
   $("#economy").innerHTML =
-    `<button class="train-button" data-action="xp" ${!canShop() || s.gold < 4 || s.level >= MAX_LEVEL ? "disabled" : ""}><span>购买经验</span><b>${icon("coin", 12)} 4 ${icon("up", 16)}</b></button><button class="refresh-button" data-action="refresh" ${!canShop() || s.gold < 2 ? "disabled" : ""}><span>刷新</span><b>${icon("coin", 12)} 2 ${icon("refresh", 16)}</b></button>`;
+    `<button class="train-button dock-button" data-action="xp" aria-label="购买4经验，消耗4灵石" ${!canShop() || s.gold < 4 || maxLevel ? "disabled" : ""}>${icon("up", 20)}<span>修习<small>${maxLevel ? "已满级" : "+4 经验"}</small></span><b class="dock-cost">${icon("coin", 11)}4</b></button><button class="refresh-button dock-button" data-action="refresh" aria-label="刷新寻仙，消耗2灵石" ${!canShop() || s.gold < 2 ? "disabled" : ""}>${icon("refresh", 19)}<span>刷新<small>寻觅仙缘</small></span><b class="dock-cost">${icon("coin", 11)}2</b></button>`;
+  const interest = Math.min(
+    s.relics.includes("savings") ? 7 : 5,
+    Math.floor(s.gold / 10),
+  );
+  $("#treasury").innerHTML =
+    `<button class="gold-total" data-action="income" aria-label="灵石 ${s.gold}，当前利息 ${interest}，查看收入明细"><span class="gold-balance">${icon("coin", 19)}<strong>${s.gold}</strong></span><span class="gold-caption">灵石 <small>利息 +${interest}</small></span></button>`;
   $("#shop-meta").innerHTML =
-    `<span class="shop-title">寻仙</span><span class="shop-level">Lv.${s.level} <small>${s.level >= MAX_LEVEL ? "满级" : s.xp + "/" + XP_NEEDED[s.level]}</small></span><div class="xp-track"><i style="width:${s.level >= MAX_LEVEL ? 100 : (s.xp / XP_NEEDED[s.level]) * 100}%"></i></div><button class="shop-odds" data-action="odds" aria-label="查看商店概率与共享卡池">${SHOP_ODDS[s.level].map((n, i) => `<span style="color:${COST_COLORS[i + 1]}">${n}%</span>`).join("")}</button>`;
+    `<span class="shop-title">寻仙</span><span class="shop-level">${s.level}级概率</span><button class="shop-odds" data-action="odds" aria-label="查看商店概率与共享卡池">${SHOP_ODDS[s.level].map((n, i) => `<span style="color:${COST_COLORS[i + 1]}">${n}%</span>`).join("")}</button>`;
   $("#lock-button").innerHTML = icon(s.locked ? "lock" : "unlock", 15);
   $("#lock-button").setAttribute(
     "aria-label",
@@ -266,7 +285,7 @@ function update() {
     })
     .join("");
   $("#round-actions").innerHTML =
-    `<button class="gold-total" data-action="income" aria-label="查看收入明细">${icon("coin", 18)}<strong>${s.gold}</strong></button><div class="interest-pips" title="利息 ${Math.min(s.relics.includes("savings") ? 7 : 5, Math.floor(s.gold / 10))}">${Array.from({ length: s.relics.includes("savings") ? 7 : 5 }, (_, i) => `<i class="${s.gold >= (i + 1) * 10 ? "lit" : ""}"></i>`).join("")}</div><button class="battle-button" data-action="${s.phase === "result" ? "continue" : "battle"}" ${!["prepare", "result"].includes(s.phase) || !ready ? "disabled" : ""}>${s.phase === "battle" ? "交战中" : s.phase === "result" ? "下一回合" : "立即开战"}</button><button class="auto-toggle" data-action="autoplay" aria-label="${s.autoAdvance ? "暂停自动推进" : "恢复自动推进"}">${icon(s.autoAdvance ? "pause" : "play", 12)} ${s.autoAdvance ? "自动" : "已暂停"}</button>`;
+    `<button class="auto-toggle" data-action="autoplay" aria-pressed="${s.autoAdvance}" aria-label="${s.autoAdvance ? "暂停自动推进" : "恢复自动推进"}">${icon(s.autoAdvance ? "pause" : "play", 16)}<span>${s.autoAdvance ? "自动" : "手动"}</span></button><button class="battle-button dock-button" data-action="${s.phase === "result" ? "continue" : "battle"}" ${!["prepare", "result"].includes(s.phase) || !ready ? "disabled" : ""}>${icon(s.phase === "result" ? "arrow" : "sword", 20)}<span>${s.phase === "battle" ? "交战中" : s.phase === "result" ? "下一回合" : "立即开战"}</span></button>`;
   if (["relic", "carousel", "event", "ended"].includes(s.phase)) {
     const button = $<HTMLButtonElement>(".battle-button");
     button.disabled = !ready;
@@ -305,6 +324,20 @@ function update() {
   )
     showBuilds();
 }
+function renderFormationCount(battle = scene.battle) {
+  const el = $("#formation-count");
+  const fighting = game.state.phase === "battle" && !!battle;
+  el.dataset.mode = fighting ? "combat" : "formation";
+  el.innerHTML = fighting
+    ? `<span class="army-count ally">我方 <b>${battle.alive(0).length}</b></span><i class="versus">对战</i><span class="army-count enemy"><b>${battle.alive(1).length}</b> 敌方</span>`
+    : `${icon("grid", 15)}<span class="formation-caption">上阵</span><b>${game.deployed.length}</b><span>/${game.state.level}</span>`;
+  el.setAttribute(
+    "aria-label",
+    fighting
+      ? `我方存活 ${battle.alive(0).length}，敌方存活 ${battle.alive(1).length}`
+      : `已上阵 ${game.deployed.length}，可上阵 ${game.state.level}`,
+  );
+}
 function renderDamage() {
   const b = scene.battle;
   const entries = b
@@ -341,7 +374,7 @@ function renderBattleControls() {
       : s.phase === "prepare"
         ? u
           ? `<div class="unit-action-bar" aria-label="已选英灵操作"><div class="unit-action-info"><strong>${hero(u.heroId).name} <span>${"★".repeat(u.star)}</span></strong><small>${u.position === null ? "备战席 · 点棋格上阵" : "已上阵 · 点棋格移动"}</small></div><button class="unit-sell" data-action="sell" aria-label="出售${hero(u.heroId).name}，获得 ${sellPrice(u)} 灵石">出售 <span>${icon("coin", 14)} +${sellPrice(u)}</span></button><button class="unit-action-close" data-action="deselect" aria-label="取消选择">${icon("close", 17)}</button></div>`
-          : `<div class="formation-hint">${s.round === 1 ? "招募 · 布阵 · 拖动装备到英灵" : "拖向寻仙区可出售 · 点击装备查看合成"}</div>`
+          : `<div class="formation-hint">${s.round === 1 ? "招募 · 布阵 · 拖动装备到英灵" : "拖至底栏出售 · 点击装备查看合成"}</div>`
         : "";
 }
 function selectedUnit() {
@@ -711,6 +744,7 @@ function beginCombat() {
   selected = null;
   if (game.start()) {
     scene.begin(b);
+    renderFormationCount(b);
     sound.play("skill");
     renderBattleControls();
   }
@@ -1160,7 +1194,7 @@ let benchDrag: {
 } | null = null;
 let dragFeedback: { uid: string; ghost: HTMLElement } | null = null;
 let suppressDragClick = false;
-const shopArea = $(".shop-wrap");
+const saleArea = $("#command-dock");
 const sellZone = $("#sell-zone");
 function containsPoint(element: HTMLElement, x: number, y: number) {
   const r = element.getBoundingClientRect();
@@ -1184,7 +1218,6 @@ function previewUnitDrag(uid: string, x: number, y: number) {
     return;
   }
   if (dragFeedback?.uid !== uid) {
-    setShopOpen(true);
     clearDragFeedback();
     const ghost = document.createElement("div");
     ghost.className = "drag-ghost";
@@ -1192,21 +1225,23 @@ function previewUnitDrag(uid: string, x: number, y: number) {
     ghost.innerHTML = art(u.heroId);
     document.body.appendChild(ghost);
     dragFeedback = { uid, ghost };
-    sellZone.innerHTML = `<span class="sell-zone-symbol">${icon("coin", 34)}</span><div class="sell-zone-copy"><strong id="sell-zone-label">拖到此处出售</strong><p>${hero(u.heroId).name} <span>${"★".repeat(u.star)}</span></p></div><div class="sell-zone-price"><b>+${sellPrice(u)}</b><span>灵石</span></div><small>移出此区域取消出售</small>`;
+    sellZone.innerHTML = `<span class="sell-zone-symbol">${icon("coin", 28)}</span><div class="sell-zone-copy"><strong id="sell-zone-label">拖至底栏出售</strong><p>${hero(u.heroId).name} <span>${"★".repeat(u.star)}</span></p></div><div class="sell-zone-price"><b>+${sellPrice(u)}</b><span>灵石</span></div><small>${u.items?.length ? "装备将退回 · " : ""}移出底栏取消</small>`;
     sellZone.setAttribute("aria-hidden", "false");
-    shopArea.classList.add("sell-ready");
+    saleArea.classList.add("sell-ready");
     document.body.classList.add("unit-dragging");
   }
   dragFeedback!.ghost.style.left = `${x}px`;
   dragFeedback!.ghost.style.top = `${y}px`;
-  const over = containsPoint(shopArea, x, y);
-  shopArea.classList.toggle("sell-hover", over);
-  $("#sell-zone-label").textContent = over ? "松手出售" : "拖到此处出售";
+  scene.previewPlacement(uid, x, y);
+  const over = containsPoint(saleArea, x, y);
+  saleArea.classList.toggle("sell-hover", over);
+  $("#sell-zone-label").textContent = over ? "松手出售" : "拖至底栏出售";
 }
 function clearDragFeedback() {
+  scene.clearPlacement();
   dragFeedback?.ghost.remove();
   dragFeedback = null;
-  shopArea.classList.remove("sell-ready", "sell-hover");
+  saleArea.classList.remove("sell-ready", "sell-hover");
   sellZone.setAttribute("aria-hidden", "true");
   document.body.classList.remove("unit-dragging");
 }
@@ -1218,11 +1253,16 @@ function cancelUnitDrag() {
   clearDragFeedback();
 }
 function dropUnit(uid: string, x: number, y: number) {
-  // A drag's synthetic click must not recruit a card underneath the drop.
+  // A drag's synthetic click must not activate any control underneath the drop.
   suppressDragClick = true;
   const canDrop =
-    canShop() && !modal.open && game.state.units.some((u) => u.uid === uid);
-  const selling = canDrop && containsPoint(shopArea, x, y);
+    canShop() &&
+    !modal.open &&
+    game.state.units.some(
+      (u) =>
+        u.uid === uid && (game.state.phase !== "battle" || u.position === null),
+    );
+  const selling = canDrop && containsPoint(saleArea, x, y);
   const withdrawing =
     canDrop &&
     game.state.phase === "prepare" &&
@@ -1230,7 +1270,14 @@ function dropUnit(uid: string, x: number, y: number) {
   clearDragFeedback();
   if (selling) sellUnit(uid);
   else if (withdrawing) move(uid, null);
-  return selling || withdrawing || !canDrop;
+  // An open shop is an overlay, never a board move or a sale target.
+  const shop = $(".shop-wrap");
+  return (
+    selling ||
+    withdrawing ||
+    !canDrop ||
+    (shop.getClientRects().length > 0 && containsPoint(shop, x, y))
+  );
 }
 window.addEventListener(
   "pointerdown",
@@ -1391,6 +1438,7 @@ scene.onCell = (p) => {
 };
 scene.onMove = move;
 scene.onTick = (b) => {
+  renderFormationCount(b);
   $("#phase-timer").textContent = String(Math.max(0, 60 - Math.floor(b.time)));
   renderDamage();
   const t = $("#combat-time");

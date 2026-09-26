@@ -1104,9 +1104,6 @@ button {
 .unit-dragging #sell-zone {
   display: flex;
 }
-.unit-dragging #shop {
-  visibility: hidden;
-}
 .sell-hover #sell-zone {
   border-color: #ffe4a2;
   background: linear-gradient(110deg, #47523aff, #6c663af9);

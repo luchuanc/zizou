@@ -10,12 +10,24 @@ import {
   Texture,
   Rectangle,
   Polygon,
+  FillGradient,
   type FederatedPointerEvent,
 } from "pixi.js";
 import { hero } from "./data";
 import { opponentUnits, type GameState, type Unit } from "./game";
-import { Battle, coords, type Fighter, type BattleEvent } from "./battle";
+import { Battle, type Fighter, type BattleEvent } from "./battle";
 import { SpellEffects } from "./effects";
+import {
+  boardPoint,
+  boardCellAt,
+  fitBoard,
+  hexPoints,
+  BATTLE_SEAM,
+  BOARD_VIEW_WIDTH,
+  BOARD_VIEW_HEIGHT,
+  type BoardPoint,
+} from "./board-layout";
+export { boardPoint } from "./board-layout";
 
 interface Visual {
   root: Container;
@@ -25,6 +37,10 @@ interface Visual {
   status: Graphics;
   statusText: Text;
   label: Text;
+  caption: Container;
+  enemy: boolean;
+  star: number;
+  factor: number;
   x: number;
   y: number;
   hp: number;
@@ -38,32 +54,11 @@ interface Effect {
   duration: number;
   update: (p: number) => void;
 }
-export const SCENE_WIDTH = 920,
-  SCENE_HEIGHT = 480;
+export const SCENE_WIDTH = BOARD_VIEW_WIDTH,
+  SCENE_HEIGHT = BOARD_VIEW_HEIGHT;
 const W = SCENE_WIDTH,
   H = SCENE_HEIGHT;
-const GOLD = 0xc3a269,
-  JADE = 0x346960;
-export function boardPoint(p: number) {
-  const { col, row } = coords(p);
-  return { x: 148 + col * 96 + (row % 2) * 48, y: 122 + row * 38 };
-}
-function hex(x: number, y: number, r = 49) {
-  return [
-    x,
-    y - r * 0.65,
-    x + r * 0.9,
-    y - r * 0.325,
-    x + r * 0.9,
-    y + r * 0.325,
-    x,
-    y + r * 0.65,
-    x - r * 0.9,
-    y + r * 0.325,
-    x - r * 0.9,
-    y - r * 0.325,
-  ];
-}
+const GOLD = 0xc3a269;
 function label(text: string, size: number, color: number) {
   return new Text({
     text,
@@ -78,6 +73,11 @@ export class Scene {
   app = new Application();
   world = new Container();
   private board = new Container();
+  private stone = new Graphics();
+  private ornament = new Graphics();
+  private grid = new Container();
+  private placement = new Graphics();
+  private selectedCell = new Graphics();
   private actors = new Container();
   private fx = new Container();
   private motes = new Container();
@@ -86,7 +86,6 @@ export class Scene {
   private lastNumber = new Map<string, number>();
   private visuals = new Map<string, Visual>();
   private effects: Effect[] = [];
-  private tiles: Graphics[] = [];
   private state!: GameState;
   private selected: string | null = null;
   private clock = 0;
@@ -102,6 +101,18 @@ export class Scene {
   private scaleY = 1;
   private offsetX = 0;
   private offsetY = 0;
+  private unitScale = 1;
+  private captionScale = 1;
+  private compact = false;
+  private stoneFill = new FillGradient({
+    start: { x: 0, y: 0 },
+    end: { x: 0, y: 1 },
+    colorStops: [
+      { offset: 0, color: 0x233a3e },
+      { offset: 0.48, color: 0x1d3436 },
+      { offset: 1, color: 0x2b4840 },
+    ],
+  });
   private ready = false;
   private lastTick = 0;
   battle: Battle | null = null;
@@ -194,23 +205,31 @@ export class Scene {
         privateHost.clientWidth,
         privateHost.clientHeight,
       );
-      const compact = privateHost.clientHeight < 310;
-      const compression = compact ? 0.62 : 1;
-      const headroom = compact ? 44 : 0;
-      this.scale = Math.min(
-        privateHost.clientWidth / (compact ? 840 : W),
-        privateHost.clientHeight / (H * compression + headroom),
+      this.compact = matchMedia(
+        "(max-height: 650px) and (orientation: landscape), (max-width: 1000px) and (orientation: landscape)",
+      ).matches;
+      const view = fitBoard(
+        privateHost.clientWidth,
+        privateHost.clientHeight,
+        this.compact,
       );
-      this.scaleY = this.scale * compression;
-      this.offsetX = (privateHost.clientWidth - W * this.scale) / 2;
-      this.offsetY =
-        headroom * this.scale +
-        (privateHost.clientHeight - H * this.scaleY - headroom * this.scale) /
-          2;
+      this.scale = view.scaleX;
+      this.scaleY = view.scaleY;
+      this.unitScale = view.unitScale;
+      this.captionScale = view.captionScale;
+      this.offsetX = view.offsetX;
+      this.offsetY = view.offsetY;
       this.world.scale.set(this.scale, this.scaleY);
-      for (const v of this.visuals.values())
-        v.root.scale.y = (v.root.scale.x * this.scale) / this.scaleY;
+      for (const v of this.visuals.values()) this.sizeVisual(v);
+      this.fx.scale.set(
+        this.unitScale / this.scale,
+        this.unitScale / this.scaleY,
+      );
       this.world.position.set(this.offsetX, this.offsetY);
+      this.drawStone(view.top, view.bottom);
+      this.clearEffects();
+      this.clearPlacement();
+      this.highlight();
     };
     new ResizeObserver(resize).observe(privateHost);
     resize();
@@ -235,92 +254,212 @@ export class Scene {
     this.ready = true;
   }
   private drawBoard() {
-    const stone = [
-      100, 34, 782, 34, 864, 76, 864, 421, 805, 451, 116, 451, 66, 422, 66, 76,
-    ];
     this.board.addChild(
-      new Graphics()
-        .ellipse(462, 409, 422, 55)
-        .fill({ color: 0x081c19, alpha: 0.55 }),
+      this.stone,
+      this.ornament,
+      this.grid,
+      this.selectedCell,
+      this.placement,
     );
-    this.board.addChild(
-      new Graphics()
-        .poly(stone.map((n, i) => (i % 2 ? n + 12 : n)))
-        .fill(0x122e29)
-        .stroke({ color: 0x8a7348, width: 2 }),
-    );
-    this.board.addChild(
-      new Graphics()
-        .poly(stone)
-        .fill({ color: 0x355449, alpha: 0.97 })
-        .stroke({ color: 0xc1a56a, width: 2 }),
-    );
-    const engraving = new Graphics()
-      .ellipse(465, 251, 148, 104)
-      .stroke({ color: GOLD, alpha: 0.12, width: 2 })
-      .ellipse(465, 251, 134, 95)
-      .stroke({ color: GOLD, alpha: 0.12, width: 1 });
-    engraving
-      .poly([400, 290, 429, 211, 461, 255, 497, 196, 531, 290])
-      .stroke({ color: GOLD, alpha: 0.13, width: 4 });
-    this.board.addChild(engraving);
+    this.placement.eventMode = this.selectedCell.eventMode = "none";
     for (let p = 0; p < BOARD_CELLS; p++) {
       const { x, y } = boardPoint(p),
         enemy = p < PLAYER_START;
       const tile = new Graphics()
-        .poly(hex(x, y, 46))
-        .fill({ color: enemy ? 0x475a4d : 0x516f5b, alpha: 0.5 })
-        .stroke({ color: enemy ? 0x7a8061 : 0x94a779, alpha: 0.5, width: 1 });
+        .poly(hexPoints(x, y))
+        .fill({ color: enemy ? 0x668082 : 0x749c83, alpha: enemy ? 0.1 : 0.17 })
+        .stroke({
+          color: enemy ? 0x8c9c97 : 0xa0bca0,
+          alpha: enemy ? 0.24 : 0.36,
+          width: 1,
+        });
       tile.eventMode = "static";
       tile.cursor = "pointer";
-      tile.hitArea = new Polygon(hex(x, y, 46));
+      tile.hitArea = new Polygon(hexPoints(x, y, 48, 33));
       tile.on("pointertap", () => {
         if (!this.drag) this.onCell(p);
       });
-      this.tiles.push(tile);
-      this.board.addChild(tile);
+      this.grid.addChild(tile);
     }
-    this.board.addChild(
-      new Graphics()
-        .moveTo(104, 255)
-        .lineTo(812, 255)
-        .stroke({ color: GOLD, width: 1, alpha: 0.45 }),
-    );
-    for (const [text, x, y] of [
-      ["敌 方", 460, 48],
-      ["己 方 · 四 行 布 阵", 460, 438],
-    ] as const) {
-      const t = label(text, 10, 0xc1c5a4);
-      t.anchor.set(0.5);
-      t.position.set(x, y);
-      this.board.addChild(t);
+  }
+  private drawStone(top: number, bottom: number) {
+    const edge = [
+      110,
+      top,
+      810,
+      top,
+      860,
+      top + 38,
+      860,
+      bottom - 28,
+      814,
+      bottom,
+      106,
+      bottom,
+      60,
+      bottom - 28,
+      60,
+      top + 38,
+    ];
+    const inset = [
+      116,
+      top + 11,
+      804,
+      top + 11,
+      847,
+      top + 43,
+      847,
+      bottom - 33,
+      809,
+      bottom - 11,
+      111,
+      bottom - 11,
+      73,
+      bottom - 33,
+      73,
+      top + 43,
+    ];
+    this.stone
+      .clear()
+      .poly(edge.map((n, i) => (i % 2 ? n + 9 : n)))
+      .fill(0x0d2427)
+      .stroke({ color: 0x7a694b, alpha: 0.75, width: 1.5 })
+      .poly(edge)
+      .fill(this.stoneFill)
+      .stroke({ color: 0xc4a875, alpha: 0.85, width: 1.6 })
+      .poly(inset)
+      .stroke({ color: 0x9fb596, alpha: 0.25, width: 1 });
+    // A quiet warm/cool split and inlaid seam replace the flat green slab.
+    this.stone
+      .poly([
+        116,
+        top + 12,
+        804,
+        top + 12,
+        846,
+        top + 43,
+        846,
+        BATTLE_SEAM,
+        74,
+        BATTLE_SEAM,
+        74,
+        top + 43,
+      ])
+      .fill({ color: 0xa4866c, alpha: 0.035 })
+      .poly([
+        74,
+        BATTLE_SEAM,
+        846,
+        BATTLE_SEAM,
+        846,
+        bottom - 33,
+        809,
+        bottom - 12,
+        111,
+        bottom - 12,
+        74,
+        bottom - 33,
+      ])
+      .fill({ color: 0x8bbca0, alpha: 0.045 });
+    const g = this.ornament.clear();
+    g.ellipse(460, BATTLE_SEAM, 114, 78)
+      .stroke({ color: GOLD, alpha: 0.07, width: 1 })
+      .ellipse(460, BATTLE_SEAM, 104, 71)
+      .stroke({ color: GOLD, alpha: 0.045, width: 1 });
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      const px = Math.cos(a),
+        py = Math.sin(a);
+      g.moveTo(460, BATTLE_SEAM)
+        .quadraticCurveTo(
+          460 + px * 36 - py * 22,
+          BATTLE_SEAM + py * 26 + px * 16,
+          460 + px * 73,
+          BATTLE_SEAM + py * 50,
+        )
+        .quadraticCurveTo(
+          460 + px * 36 + py * 22,
+          BATTLE_SEAM + py * 26 - px * 16,
+          460,
+          BATTLE_SEAM,
+        )
+        .stroke({ color: GOLD, alpha: 0.065, width: 1 });
     }
-    for (const x of [81, 849])
-      for (const y of [73, 418]) {
-        this.board.addChild(
-          new Graphics()
-            .ellipse(x, y + 8, 17, 8)
-            .fill(0x163d33)
-            .rect(x - 3, y - 22, 6, 30)
-            .fill(0x827455)
-            .poly([
-              x - 12,
-              y - 23,
-              x,
-              y - 34,
-              x + 12,
-              y - 23,
-              x + 7,
-              y - 9,
-              x - 7,
-              y - 9,
-            ])
-            .fill(0xa39e72)
-            .stroke({ color: 0xd1b376, width: 1 })
-            .circle(x, y - 18, 4)
-            .fill(0xffdf9a),
-        );
+    g.moveTo(106, BATTLE_SEAM)
+      .lineTo(441, BATTLE_SEAM)
+      .moveTo(479, BATTLE_SEAM)
+      .lineTo(814, BATTLE_SEAM)
+      .stroke({ color: 0xc4b08a, alpha: 0.26, width: 1 })
+      .poly([
+        460,
+        BATTLE_SEAM - 6,
+        470,
+        BATTLE_SEAM,
+        460,
+        BATTLE_SEAM + 6,
+        450,
+        BATTLE_SEAM,
+      ])
+      .fill({ color: 0xd1b578, alpha: 0.45 });
+    for (const x of [85, 835])
+      for (const y of [top + 43, bottom - 36]) {
+        const dir = x < 460 ? 1 : -1;
+        g.moveTo(x, y + 15)
+          .lineTo(x, y - 8)
+          .quadraticCurveTo(x, y - 19, x + dir * 13, y - 19)
+          .lineTo(x + dir * 28, y - 19)
+          .stroke({ color: 0xd4ba83, alpha: 0.65, width: 2 })
+          .moveTo(x + dir * 7, y + 8)
+          .lineTo(x + dir * 7, y - 6)
+          .lineTo(x + dir * 21, y - 6)
+          .stroke({ color: 0x819987, alpha: 0.55, width: 1 })
+          .poly([x, y - 6, x + 6, y, x, y + 6, x - 6, y])
+          .fill(0xbca170);
       }
+  }
+  private sizeVisual(v: Visual) {
+    const size = this.unitScale * v.factor;
+    v.root.scale.set(size / this.scale, size / this.scaleY);
+    v.caption.scale.set(this.captionScale / size);
+    v.root.hitArea = new Rectangle(
+      -Math.max(39, 22 / size),
+      -106,
+      Math.max(78, 44 / size),
+      132,
+    );
+  }
+  private effectPoint(point: BoardPoint): BoardPoint {
+    return {
+      x: (point.x * this.scale) / this.unitScale,
+      y: (point.y * this.scaleY) / this.unitScale,
+    };
+  }
+  private clearEffects() {
+    this.spells.clear();
+    this.effects.forEach((e) => e.node.destroy({ children: true }));
+    this.effects = [];
+  }
+  previewPlacement(uid: string, x: number, y: number) {
+    this.placement.clear();
+    if (this.state?.phase !== "prepare") return;
+    const p = this.clientCell(x, y);
+    if (p === null) return;
+    const valid = p >= PLAYER_START;
+    const point = boardPoint(p);
+    this.placement
+      .poly(hexPoints(point.x, point.y))
+      .fill({ color: valid ? 0xd3bb75 : 0xbf7464, alpha: valid ? 0.25 : 0.17 })
+      .stroke({ color: valid ? 0xffdf96 : 0xde8b7d, alpha: 0.95, width: 2 });
+    const current = this.state.units.find((u) => u.uid === uid)?.position;
+    if (current != null && current !== p) {
+      const a = boardPoint(current);
+      this.placement
+        .poly(hexPoints(a.x, a.y, 39, 27))
+        .stroke({ color: 0x95c1aa, alpha: 0.7, width: 1.5 });
+    }
+  }
+  clearPlacement() {
+    this.placement.clear();
   }
   private addMotes() {
     for (let i = 0; i < 24; i++) {
@@ -334,7 +473,11 @@ export class Scene {
   sync(s: GameState, selected: string | null) {
     this.state = s;
     this.selected = selected;
-    if (!this.ready || this.battle) return;
+    if (!this.ready) return;
+    if (this.battle) {
+      this.highlight();
+      return;
+    }
     this.clearActors();
     const units = [
       ...opponentUnits(s),
@@ -349,7 +492,7 @@ export class Scene {
         (unit.star > before.star || items !== before.items) &&
         !this.reducedMotion
       ) {
-        const point = boardPoint(unit.position!);
+        const point = this.effectPoint(boardPoint(unit.position!));
         const ring = new Graphics()
           .ellipse(0, 0, 40, 22)
           .stroke({ color: 0xffdf8b, width: 3 });
@@ -371,7 +514,6 @@ export class Scene {
         );
         t.anchor.set(0.5);
         t.position.set(point.x, point.y - 110);
-        t.scale.y = this.scale / this.scaleY;
         this.fx.addChild(t);
         this.effects.push({
           node: t,
@@ -397,30 +539,37 @@ export class Scene {
     this.highlight();
   }
   private highlight() {
-    for (const [uid, v] of this.visuals) v.ring.visible = uid === this.selected;
-    this.tiles.forEach((tile, i) => {
-      tile.tint = this.selected && i >= PLAYER_START ? 0xfff3d0 : 0xffffff;
-    });
+    this.selectedCell.clear();
+    for (const [uid, v] of this.visuals) {
+      const chosen = uid === this.selected;
+      v.ring.visible = chosen;
+      v.caption.visible =
+        chosen || (!this.battle && (!v.enemy || !this.compact));
+      if (chosen && !this.battle)
+        this.selectedCell
+          .poly(hexPoints(v.x, v.y))
+          .fill({ color: 0xc8b06e, alpha: 0.17 })
+          .stroke({ color: 0xe2c88b, alpha: 0.7, width: 1.5 });
+    }
+    this.grid.alpha = this.battle ? 0.26 : 1;
   }
   private clearActors() {
-    this.spells.clear();
+    this.clearEffects();
     this.visuals.clear();
     this.actors.removeChildren().forEach((c) => c.destroy({ children: true }));
-    this.effects.forEach((e) => e.node.destroy({ children: true }));
-    this.effects = [];
   }
   private makeVisual(u: Unit, enemy: boolean) {
     const p = boardPoint(u.position!),
       root = new Container();
     root.position.set(p.x, p.y);
-    root.scale.y = this.scale / this.scaleY;
     root.zIndex = p.y;
     const shadow = new Graphics()
       .ellipse(0, 6, 28, 10)
-      .fill({ color: 0x263e36, alpha: 0.18 });
+      .fill({ color: 0x071d1b, alpha: 0.32 });
     const base = new Graphics()
-      .ellipse(0, 6, 29, 10)
-      .stroke({ color: enemy ? 0xaf7260 : 0x679187, width: 1.5, alpha: 0.7 });
+      .ellipse(0, 6, 30, 10)
+      .fill({ color: enemy ? 0x8e6756 : 0x5a927c, alpha: 0.13 })
+      .stroke({ color: enemy ? 0xbc826a : 0x93b994, width: 1, alpha: 0.5 });
     const ring = new Graphics()
       .ellipse(0, 6, 35, 13)
       .fill({ color: GOLD, alpha: 0.14 })
@@ -433,28 +582,43 @@ export class Scene {
     sprite.y = 5;
     const bars = new Graphics();
     const name = label(
-      `${u.neutral ? "灵兽" : hero(u.heroId).name} ${"★".repeat(u.star)}`,
-      11,
+      u.neutral ? "灵兽" : hero(u.heroId).name,
+      14,
       enemy ? 0xf0baaa : 0xe5e8cd,
     );
-    name.anchor.set(0.5, 0);
-    name.y = 17;
+    const hasItems = !!u.items?.length;
+    name.anchor.set(hasItems ? 1 : 0.5, 0.5);
+    name.position.set(hasItems ? -4 : 0, 16);
+    name.style.stroke = { color: 0x102929, width: 2 };
+    const caption = new Container();
+    caption.eventMode = "none";
+    caption.addChild(name);
     const status = new Graphics(),
-      statusText = label("", 10, 0x46797b);
+      statusText = label("", 13, 0xf2dfad);
     statusText.anchor.set(0.5);
-    statusText.y = -117;
-    root.addChild(shadow, base, ring, sprite, status, bars, name, statusText);
+    statusText.y = -120;
+    statusText.style.stroke = { color: 0x183635, width: 3 };
+    root.addChild(
+      shadow,
+      base,
+      ring,
+      sprite,
+      status,
+      bars,
+      caption,
+      statusText,
+    );
     (u.items ?? []).forEach((id, i) => {
-      const x = (i - ((u.items?.length ?? 1) - 1) / 2) * 19;
+      const x = 8 + i * 18;
       const plate = new Graphics()
-        .roundRect(x - 8, 33, 16, 16, 2)
+        .roundRect(x - 8, 8, 16, 16, 2)
         .fill(0x172e2e)
         .stroke({ color: item(id).parts ? 0xc7a661 : 0x78949a, width: 1 });
       const glyph = new Sprite(this.itemTextures.get(id));
       glyph.width = glyph.height = 16;
       glyph.anchor.set(0.5);
-      glyph.position.set(x, 41);
-      root.addChild(plate, glyph);
+      glyph.position.set(x, 16);
+      caption.addChild(plate, glyph);
     });
     root.eventMode = "static";
     root.cursor = "pointer";
@@ -490,6 +654,10 @@ export class Scene {
       status,
       statusText,
       label: name,
+      caption,
+      enemy,
+      star: u.star,
+      factor: 1,
       x: p.x,
       y: p.y,
       hp: 1,
@@ -499,6 +667,8 @@ export class Scene {
     };
     this.visuals.set(u.uid, v);
     this.actors.addChild(root);
+    this.sizeVisual(v);
+    v.caption.visible = !this.battle && (!enemy || !this.compact);
     this.drawBars(v, 1, 0, enemy, 0);
   }
   private drawBars(
@@ -510,14 +680,29 @@ export class Scene {
   ) {
     v.bars
       .clear()
-      .roundRect(-25, -103, 50, 5, 2)
-      .fill({ color: 0x243e35, alpha: 0.65 })
-      .roundRect(-24, -102, 48 * Math.max(0, hp), 3, 1)
-      .fill(enemy ? 0xbb7963 : 0x6ea993);
-    if (mana > 0)
-      v.bars.rect(-24, -97, 48 * Math.min(1, mana), 2).fill(0x7faaa9);
+      .roundRect(-31, -108, 62, 13, 2)
+      .fill({ color: 0x091d22, alpha: 0.94 })
+      .stroke({ color: enemy ? 0xad7666 : 0x83ad99, alpha: 0.65, width: 1 })
+      .rect(-28, -105, 56 * Math.max(0, Math.min(1, hp)), 5)
+      .fill(enemy ? 0xcc8a74 : 0x98c5a0)
+      .rect(-28, -98, 56 * Math.min(1, mana), 2)
+      .fill(0x8ebcd5);
+    // Star pips live beside the health strip, freeing the name/equipment line.
+    for (let i = 0; i < v.star; i++)
+      v.bars
+        .poly([
+          35 + i * 8,
+          -106,
+          38 + i * 8,
+          -102,
+          35 + i * 8,
+          -98,
+          32 + i * 8,
+          -102,
+        ])
+        .fill(v.star === 3 ? 0xffd271 : v.star === 2 ? 0xdfc08b : 0xafc6b5);
     if (shield > 0)
-      v.bars.rect(-24, -106, 48 * Math.min(1, shield), 2).fill(0xf6d68c);
+      v.bars.rect(-28, -110, 56 * Math.min(1, shield), 2).fill(0xf6d68c);
   }
   private dragMove(e: FederatedPointerEvent) {
     const drag = this.drag;
@@ -551,21 +736,18 @@ export class Scene {
     this.onDragCancel();
   }
   nearest(x: number, y: number) {
-    let best = -1,
-      d = Infinity;
-    for (let p = 0; p < BOARD_CELLS; p++) {
-      const point = boardPoint(p),
-        dist = Math.hypot((point.x - x) * 0.7, point.y - y);
-      if (dist < d) {
-        d = dist;
-        best = p;
-      }
-    }
-    return d < 47 ? best : null;
+    return boardCellAt(x, y);
   }
   clientCell(clientX: number, clientY: number) {
     if (!this.ready) return null;
     const rect = this.app.canvas.getBoundingClientRect();
+    if (
+      clientX < rect.left ||
+      clientX > rect.right ||
+      clientY < rect.top ||
+      clientY > rect.bottom
+    )
+      return null;
     return this.nearest(
       (clientX - rect.left - this.offsetX) / this.scale,
       (clientY - rect.top - this.offsetY) / this.scaleY,
@@ -574,18 +756,15 @@ export class Scene {
   clientUnit(clientX: number, clientY: number) {
     if (!this.ready) return null;
     const r = this.app.canvas.getBoundingClientRect();
-    const x = (clientX - r.left - this.offsetX) / this.scale,
-      y = (clientY - r.top - this.offsetY) / this.scaleY;
+    const point = { x: clientX - r.left, y: clientY - r.top };
     const candidates = [...this.visuals.entries()]
       .filter(([uid]) => this.state.units.some((u) => u.uid === uid))
       .sort((a, b) => b[1].root.y - a[1].root.y);
     return (
-      candidates.find(
-        ([, v]) =>
-          Math.abs(x - v.root.x) <= 39 &&
-          y >= v.root.y - (93 * this.scale) / this.scaleY &&
-          y <= v.root.y + 27,
-      )?.[0] ?? null
+      candidates.find(([, v]) => {
+        const local = v.root.toLocal(point);
+        return v.root.alpha > 0.1 && v.root.hitArea?.contains(local.x, local.y);
+      })?.[0] ?? null
     );
   }
   begin(battle: Battle) {
@@ -594,7 +773,8 @@ export class Scene {
     this.lastTick = -1;
     this.clearActors();
     for (const f of battle.fighters) this.makeVisual(f, f.team === 1);
-    this.tiles.forEach((t) => (t.tint = 0xffffff));
+    this.clearPlacement();
+    this.highlight();
   }
   end() {
     this.battle = null;
@@ -616,7 +796,8 @@ export class Scene {
           this.makeVisual(f, f.team === 1);
           if (f.summonOf) {
             const v = this.visuals.get(f.uid)!;
-            v.root.scale.set(0.65, (0.65 * this.scale) / this.scaleY);
+            v.factor = 0.65;
+            this.sizeVisual(v);
             v.label.text = "幻羽";
           }
         }
@@ -724,8 +905,8 @@ export class Scene {
       if (fighter)
         this.spells.attack(
           fighter.heroId,
-          { x: from.root.x, y: from.root.y },
-          { x: to.root.x, y: to.root.y },
+          this.effectPoint(from.root),
+          this.effectPoint(to.root),
         );
       this.onSound("hit");
     } else if (e.type === "damage" || e.type === "heal") {
@@ -742,39 +923,37 @@ export class Scene {
       t.style.fontWeight = "bold";
       t.style.stroke = { color: 0xfff5d9, width: 2 };
       t.anchor.set(0.5);
-      const x = to.root.x + ((this.effects.length % 3) - 1) * 13,
-        y = to.root.y - 88;
+      const point = this.effectPoint(to.root);
+      const x = point.x + (e.type === "heal" ? 32 : -32),
+        y = point.y - 60;
       this.fx.addChild(t);
       this.effects.push({
         node: t,
         life: 0,
         duration: 0.6,
         update: (p) => {
-          t.position.set(x, y - p * 28);
+          t.position.set(x, y - p * 22);
           t.alpha = 1 - p * p;
         },
       });
     } else if (e.type === "revive" || e.type === "summon") {
-      this.spells.revive({ x: to.root.x, y: to.root.y });
+      this.spells.revive(this.effectPoint(to.root));
     } else if (e.type === "skill") {
       const fighter = this.battle?.fighters.find((f) => f.uid === e.from);
       if (fighter) {
         const points = (e.targets ?? [e.to])
           .map((id) => this.visuals.get(id))
           .filter((v): v is Visual => !!v)
-          .map((v) => ({ x: v.root.x, y: v.root.y }));
-        this.spells.play(
-          fighter.heroId,
-          { x: from.root.x, y: from.root.y },
-          points,
-        );
+          .map((v) => this.effectPoint(v.root));
+        this.spells.play(fighter.heroId, this.effectPoint(from.root), points);
       }
       this.onSound("skill");
       if (fighter?.team !== 0 || this.effects.length >= 8) return;
       const t = label(e.skill ?? "", 12, 0x805d25);
       t.style.stroke = { color: 0xfff7dd, width: 3 };
       t.anchor.set(0.5);
-      t.position.set(from.root.x, from.root.y - 132);
+      const point = this.effectPoint(from.root);
+      t.position.set(point.x, point.y + 18);
       this.fx.addChild(t);
       this.effects.push({
         node: t,
@@ -782,7 +961,7 @@ export class Scene {
         duration: 0.7,
         update: (p) => {
           t.alpha = 1 - p * p;
-          t.y -= 0.15;
+          t.y = point.y + 18 - p * 5;
         },
       });
     }
